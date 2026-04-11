@@ -18,13 +18,13 @@ Help users **understand and reduce stress** through **AI-assisted estimation**, 
 
 The **`design/`** tree is the **Mobile Soziety–style** template (Bootstrap 5 + SCSS + static HTML). Treat it as **layout and component vocabulary**, not as shipped code:
 
-| Area | Location | Use for PeacePlot |
-|------|----------|-------------------|
-| **Compiled UI & pages** | `design/xhtml/` — HTML screens, `assets/css/style.css`, images | Screen structure: `header` / `main-bar`, `page-wraper`, lists, cards, forms, tabs, **sidebar/offcanvas** patterns for the drawer, bottom tab bar density. |
-| **Theme tokens (source)** | `design/xhtml/assets/scss/layout/theme/_theme-color.scss` | Accent palettes via `data-theme-color="color-*"` presets. |
-| **Dark theme overrides** | `design/xhtml/assets/scss/layout/theme/_theme-view.scss` (`.theme-dark`) | Dark surfaces, text, borders, form fields, header behavior. |
-| **Global variables** | `design/xhtml/assets/scss/abstracts/_variable.scss` | Typography, radii (`--border-radius-base` ≈ 12px), `:root` CSS variables. |
-| **Vendor docs** | `design/documentation/` | Installation and folder overview only. |
+| Area                      | Location                                                                 | Use for PeacePlot                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Compiled UI & pages**   | `design/xhtml/` — HTML screens, `assets/css/style.css`, images           | Screen structure: `header` / `main-bar`, `page-wraper`, lists, cards, forms, tabs, **sidebar/offcanvas** patterns for the drawer, bottom tab bar density. |
+| **Theme tokens (source)** | `design/xhtml/assets/scss/layout/theme/_theme-color.scss`                | Accent palettes via `data-theme-color="color-*"` presets.                                                                                                 |
+| **Dark theme overrides**  | `design/xhtml/assets/scss/layout/theme/_theme-view.scss` (`.theme-dark`) | Dark surfaces, text, borders, form fields, header behavior.                                                                                               |
+| **Global variables**      | `design/xhtml/assets/scss/abstracts/_variable.scss`                      | Typography, radii (`--border-radius-base` ≈ 12px), `:root` CSS variables.                                                                                 |
+| **Vendor docs**           | `design/documentation/`                                                  | Installation and folder overview only.                                                                                                                    |
 
 **Fonts:** **Nunito Sans** and **Poppins** (see `design/xhtml/index.html`). Plan to load the same (or closest Expo equivalent) for parity.
 
@@ -104,13 +104,13 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 
 ### 4.2 Bottom navigation (five tabs, fixed)
 
-| Tab | Working name | Primary purpose | Notes |
-|-----|----------------|-----------------|--------|
-| **Home** | `home` | Dashboard, entry to **stress estimation**, shortcuts, trust teasers, maybe **local places** entry | Template `index.html`-style feed/dashboard density where useful. |
-| **Insight** | `insight` | **Stress history**, **estimation results** over time, **character analysis** outputs, trends | Charts/cards; reference list/card components from `design/`. |
-| **Audio** | `audio` | **Voice AI agent**, **music**, **story/audio** content, speech-related estimation affordances | Central place for **voice** and **audio datasets**; voice agent deep-links from here. Replaces older “voice-only slot in tab bar” ideas—**Audio is the voice tab**. |
-| **Relax Hub** | `relax-hub` | **Dataset library:** books, video, image, story, music, **Yoga & Tai Chi**, **AI advice** content | Browse/filter by type; aligns with “datasets” in requirements. |
-| **Forum** | `forum` | **Articles**, **chat rooms**, **chatbot** access, community | Article list/detail, threaded discussion surfaces; see §5.3. |
+| Tab           | Working name | Primary purpose                                                                                   | Notes                                                                                                                                                               |
+| ------------- | ------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Home**      | `home`       | Dashboard, entry to **stress estimation**, shortcuts, trust teasers, maybe **local places** entry | Template `index.html`-style feed/dashboard density where useful.                                                                                                    |
+| **Insight**   | `insight`    | **Stress history**, **estimation results** over time, **character analysis** outputs, trends      | Charts/cards; reference list/card components from `design/`.                                                                                                        |
+| **Audio**     | `audio`      | **Voice AI agent**, **music**, **story/audio** content, speech-related estimation affordances     | Central place for **voice** and **audio datasets**; voice agent deep-links from here. Replaces older “voice-only slot in tab bar” ideas—**Audio is the voice tab**. |
+| **Relax Hub** | `relax-hub`  | **Dataset library:** books, video, image, story, music, **Yoga & Tai Chi**, **AI advice** content | Browse/filter by type; aligns with “datasets” in requirements.                                                                                                      |
+| **Forum**     | `forum`      | **Articles**, **chat rooms**, **chatbot** access, community                                       | Article list/detail, threaded discussion surfaces; see §5.3.                                                                                                        |
 
 **Expo routing note:** Map these to **`expo-router`** tab routes under a shared `(app)` layout with the **global header** and **theme** from §2.
 
@@ -164,13 +164,13 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 
 ### 5.1 Stress estimation — input modalities
 
-| Modality | Role | Planning note |
-|----------|------|----------------|
-| **Questions** | Structured assessment | Core; drives scoring with AI layer. |
-| **Speech-to-text** | Voice answers or journaling | Core; ties to **Audio** and **Voice AI** stack. |
-| **Camera (face)** | Signals for estimation (or future affect) | **Privacy-sensitive**; explicit consent, platform rules, phased delivery. |
-| **Fingerprint** | Biometric convenience or signal | Often **auth** vs. stress signal—clarify product intent; platform APIs; phased. |
-| **Smart watch** | Physiological or activity context | Integrate via HealthKit / Health Connect / wearables APIs; phased. |
+| Modality           | Role                                      | Planning note                                                                   |
+| ------------------ | ----------------------------------------- | ------------------------------------------------------------------------------- |
+| **Questions**      | Structured assessment                     | Core; drives scoring with AI layer.                                             |
+| **Speech-to-text** | Voice answers or journaling               | Core; ties to **Audio** and **Voice AI** stack.                                 |
+| **Camera (face)**  | Signals for estimation (or future affect) | **Privacy-sensitive**; explicit consent, platform rules, phased delivery.       |
+| **Fingerprint**    | Biometric convenience or signal           | Often **auth** vs. stress signal—clarify product intent; platform APIs; phased. |
+| **Smart watch**    | Physiological or activity context         | Integrate via HealthKit / Health Connect / wearables APIs; phased.              |
 
 Estimation **combines** available signals with **AI** to produce results used in §3.
 
