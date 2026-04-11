@@ -1,0 +1,16 @@
+{
+  "background_color": "var(--primary)",
+  "description": "Soziety - Social Network Mobile App Template.",
+  "display": "standalone",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/images/pwa150x150.png",
+      "sizes": "150x150",
+      "type": "image/png"
+    }
+  ],
+  "name": "Soziety - Social Network",
+  "short_name": "Soziety",
+  "start_url": "index.html"
+}
