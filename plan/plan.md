@@ -44,9 +44,31 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 - **Components** rebuilt from **`design/xhtml/`** with React Native + shared primitives; match **spacing, ~12px radius, header and bottom bar structure**.
 - **Gradients:** `expo-linear-gradient` (or equivalent) for blue gradients from `_theme-color.scss`.
 - **Icons:** One consistent approach (`@expo/vector-icons` and/or SVG); map roles (nav, header actions, status), not necessarily every template glyph.
-- **Branding:** Header logo uses app asset **`peaceplot.png`** (see §4.2), not the template logo.
+- **Branding & loading:** Use repo assets in **`assets/images/`** per **§2.4** (not the Soziety template logos).
 
-### 2.4 Reference HTML files (patterns, not 1:1 pages)
+### 2.4 PeacePlot brand assets & loading animation
+
+**Canonical paths (repo root–relative):**
+
+| Asset | Path | Use |
+| ----- | ---- | --- |
+| **Primary logo** | **`assets/images/peaceplot.png`** | **Header** (§4.1), **auth / welcome** branding, **drawer** header, **splash** companion if a wordmark is needed beside the loading mark, **share** previews where appropriate. |
+| **Loading / splash mark** | **`assets/images/peaceplot-loading.png`** | **App launch splash**, **full-screen loading** states (initial data fetch, auth bootstrap, heavy transitions), and **inline blocking loaders** where a centered brand treatment is preferred over a bare spinner. |
+
+**Visual fit with §2.2:** The logo artwork is **blue-forward** with **gold / highlight** accents and **liquid / water** motifs (wordmark and circular mark with lotus). Implementation should place both assets on **dark** surfaces from **§2.2** so cyan–gold gradients read clearly; avoid light-gray page backgrounds behind **`peaceplot-loading.png`** unless the PNG is exported with **true transparency** for dark UI.
+
+**Loading animation (quality bar — calm, premium, not frantic):**
+
+- **Primary treatment:** Animate **`peaceplot-loading.png`** with a **slow “breathing” scale** (e.g. subtle pulse on the central orb) and/or **soft opacity oscillation** on a **long period** (2.5–4s) so it feels meditative, not like a system busy indicator.
+- **Secondary accents (optional, pick one or combine lightly):** **Gentle shimmer** (moving linear gradient mask or very low-amplitude highlight sweep) across the liquid/water areas; **slow rotation** only if it matches the asset’s circular splash frame—keep **RPM low** (e.g. one full turn in **20–40s**) or **none** if rotation feels gimmicky.
+- **Entry / exit:** Short **fade-in** when showing loading; **fade-out** or **crossfade** into content—avoid **hard cuts** that spike stress in a stress-reduction app.
+- **Duration:** Cap **splash** display (e.g. hide when app is ready, with a **maximum** time before showing UI even if a resource is slow); avoid infinite logo spinners on cold start.
+- **Accessibility:** Respect **Reduce motion** OS settings: replace or dampen scale/rotation/shimmer with a **static** centered image + optional **minimal** progress indicator.
+- **Tech note (implementation):** Prefer **`react-native-reanimated`** (or Expo-supported animation APIs) for 60fps-friendly transforms; for web, **CSS** `@media (prefers-reduced-motion: reduce)` mirrors the same intent.
+
+**Do not** reuse **`peaceplot-loading.png`** as the small header glyph—**`peaceplot.png`** is the **navigation / UI chrome** logo; **`peaceplot-loading.png`** is for **large, centered loading / splash** contexts.
+
+### 2.5 Reference HTML files (patterns, not 1:1 pages)
 
 - **Auth:** `login.html`, `register.html`, `welcome.html`, `otp-confirm.html`.
 - **Profile / settings:** `account.html`, `setting.html`, `profile.html`.
@@ -96,7 +118,7 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 ### 4.1 Global shell (most authenticated screens)
 
 - **Layout:** Follow **`design/xhtml/`** `page-wraper` + **fixed header** + **scrollable content** + **bottom tab bar** (template bottom navigation spacing and safe areas).
-- **Header — left:** App logo image **`peaceplot.png`** from project assets (not the Soziety template logo).
+- **Header — left:** App logo **`assets/images/peaceplot.png`** (not the Soziety template logo). Scale for header height; preserve aspect ratio.
 - **Header — right (three actions):**
   1. **Chat** — entry to **messaging / chat rooms** (and/or chatbot entry, depending on product routing).
   2. **Notifications** — alerts (estimation reminders, replies, system); list/detail pattern like `notification.html`.
@@ -204,24 +226,50 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 - **Stack:** Expo (~55), React Native, **expo-router** for navigation.
 - **Platforms:** iOS, Android, Web (per Expo config).
-- **Structure:** Tab layout for **§4.2**; nested stacks per tab; **drawer** for **§4.1** grid icon; shared header component with **`peaceplot.png`**.
-- **Backend / AI / chat / search:** Required for full feature set; **select services and contracts** during build—record decisions without blocking UI shell work.
+- **Structure:** Tab layout for **§4.2**; nested stacks per tab; **drawer** for **§4.1** grid icon; shared header component with **`assets/images/peaceplot.png`**; **splash / global loading** uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
+
+### 6.1 Backend: Supabase (single platform)
+
+**Backend services are standardized on [Supabase](https://supabase.com/)** for the full product lifecycle: **Auth** (email/password, OAuth providers, session), **Postgres** (app data, RLS policies), **Storage** (avatars, media), **Realtime** (chat rooms, live updates), **Edge Functions** (optional: AI proxying, webhooks, integrations with third-party APIs without exposing secrets in the app).
+
+**Environment configuration:**
+
+- **`/.env.example`** — Committed template listing all required variables (no secrets). New developers copy it to **`.env`** and fill in project values.
+- **`/.env`** — **Gitignored**; contains `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and any optional `EXPO_PUBLIC_*` keys). Values come from **Supabase Dashboard → Project Settings → API**.
+- **Expo rule:** Only variables prefixed with **`EXPO_PUBLIC_`** are available in the client bundle. The **`service_role`** key must **never** ship in the app; use it only in **Edge Functions**, **server scripts**, or **CI**, if at all.
+
+**Client code:** `src/lib/supabase.ts` initializes the Supabase client with the anon key. Use **`requireSupabase()`** when the app must talk to the backend; handle `null` during early scaffolding if env vars are missing.
+
+**Feature mapping (high level):**
+
+| PeacePlot area | Supabase capability |
+| -------------- | ------------------- |
+| Sign-up / `userid` uniqueness / OAuth | Auth + Postgres unique constraints + profiles table |
+| Avatars | Storage bucket + public/signed URLs |
+| Stress history, character, recommendations | Postgres tables + RLS |
+| Forum, articles, tree comments, likes | Postgres + optional Realtime |
+| Chat rooms | Realtime channels and/or Postgres-backed messages |
+| Voice / AI / external APIs | Edge Functions (secrets in Supabase env, not in Expo) |
+| Location / places | Postgres + external APIs via Edge Functions if needed |
+
+**Operational note:** Create the Supabase project early, apply schema and RLS in migrations (Supabase SQL editor or CLI), and align OAuth redirect URLs with the **Expo scheme** (`peaceplot` per `app.json`) and Supabase Auth settings.
 
 ---
 
 ## 7. Build phases (suggested)
 
-1. **Design lock** — Freeze **§4** IA (tabs, header, drawer), **§2.2** tokens, and **peaceplot.png** placement; list **design/** HTML references per tab.
-2. **Shell & navigation** — **`expo-router`** tabs (**Home**, **Insight**, **Audio**, **Relax Hub**, **Forum**), global **header** + **left drawer**, **theme** (§2), placeholder screens.
-3. **Auth** — Email/password + **`userid` uniqueness** + avatar; **OAuth** Google / Microsoft / Apple stubs or full integration per priority.
-4. **Stress estimation (MVP)** — **Questions** + **speech-to-text** path; result persistence; then **dataset type selection** → **recommendations** UI (can use mock AI).
-5. **Insight** — History, character summary screens.
-6. **Relax Hub** — Content browsing by type; hooks for **location** places.
-7. **Forum** — Articles list/detail, **tree comments**, **likes**; **chat rooms** + **user search**; **chatbot** entry.
-8. **Audio** — **Voice AI** integration (phased), music/story playback.
-9. **Trust content** — Doctor content surfaces.
-10. **Additional estimation channels** — Camera, fingerprint, smartwatch as prioritized.
-11. **Polish** — Accessibility, loading/empty states, performance, App Store privacy strings.
+1. **Design lock** — Freeze **§4** IA (tabs, header, drawer), **§2.2** tokens, **`assets/images/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per tab.
+2. **Shell & navigation** — **`expo-router`** tabs (**Home**, **Insight**, **Audio**, **Relax Hub**, **Forum**), global **header** + **left drawer**, **theme** (§2), **splash + loading** screen using **`peaceplot-loading.png`** with **§2.4** animation, placeholder inner screens.
+3. **Supabase foundation** — Create project, configure **`.env`** from **`.env.example`**, wire **Auth** redirect URLs, baseline **schema** / **RLS** and **Storage** buckets per **§6.1**.
+4. **Auth** — Email/password + **`userid` uniqueness** + avatar via **Supabase Auth** + profiles table; **OAuth** Google / Microsoft / Apple per **§6.1**.
+5. **Stress estimation (MVP)** — **Questions** + **speech-to-text** path; result persistence; then **dataset type selection** → **recommendations** UI (can use mock AI).
+6. **Insight** — History, character summary screens.
+7. **Relax Hub** — Content browsing by type; hooks for **location** places.
+8. **Forum** — Articles list/detail, **tree comments**, **likes**; **chat rooms** + **user search**; **chatbot** entry.
+9. **Audio** — **Voice AI** integration (phased), music/story playback.
+10. **Trust content** — Doctor content surfaces.
+11. **Additional estimation channels** — Camera, fingerprint, smartwatch as prioritized.
+12. **Polish** — Accessibility, **loading/empty** states (reuse **`peaceplot-loading`** treatment where full-screen; keep **§2.4** reduce-motion behavior), performance, App Store privacy strings.
 
 ---
 
@@ -231,6 +279,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 - **Full moderation** and **admin** tooling for forums (unless specified).
 - **Deep wearable** or **lab** integrations beyond agreed phases.
 - Features explicitly deferred from **§7** until pulled into a sprint.
+- **Non-Supabase backends** for core data/auth (unless the plan is formally revised)—integrations should go through **Supabase** (e.g. Edge Functions) where possible.
 
 ---
 
@@ -240,4 +289,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-11_
+_Last updated: 2026-04-13_
