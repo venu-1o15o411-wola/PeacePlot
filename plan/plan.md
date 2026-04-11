@@ -59,7 +59,8 @@ Help users **understand and reduce stress** through assessment, personalized rec
   - Books  
   - Images  
   - Audio  
-  - Exercise / movement  
+  - Exercise / movement
+  - Test  
 
 - **Post–assessment:** After stress estimation, show **recommendations** drawn from these categories (rules and ranking: product/design decision; can evolve).
 
