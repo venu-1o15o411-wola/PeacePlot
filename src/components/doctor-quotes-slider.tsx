@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import React, { useMemo, useRef, useState } from "react";
 import {
   Dimensions,
@@ -15,29 +16,35 @@ import { usePeacePlotColors } from "@/context/peaceplot-appearance";
 const { width: WINDOW_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(WINDOW_WIDTH - 48, 340);
 
+const AVATAR = 52;
+
 const PLACEHOLDER_QUOTES: {
   id: string;
   quote: string;
   name: string;
   role: string;
+  avatar: number;
 }[] = [
   {
     id: "1",
     quote: "“Small steps toward calm compound into lasting resilience.”",
     name: "Dr. A. Chen",
     role: "Stress medicine",
+    avatar: require("@/assets/images/doctors/doctor-1.jpg"),
   },
   {
     id: "2",
     quote: "“Naming your stress is the first move toward easing it.”",
     name: "Dr. M. Okonkwo",
     role: "Behavioral health",
+    avatar: require("@/assets/images/doctors/doctor-2.jpg"),
   },
   {
     id: "3",
     quote: "“Rest is not a reward; it is part of the work of healing.”",
     name: "Dr. S. Patel",
     role: "Sleep & recovery",
+    avatar: require("@/assets/images/doctors/doctor-3.jpg"),
   },
 ];
 
@@ -70,7 +77,33 @@ function createStyles(c: PeacePlotPalette) {
       lineHeight: 24,
       color: c.textBody,
       fontStyle: "italic",
-      marginBottom: 12,
+      marginBottom: 14,
+    },
+    attributionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    avatarRing: {
+      width: AVATAR,
+      height: AVATAR,
+      borderRadius: AVATAR / 2,
+      padding: 2,
+      backgroundColor: c.measureRing,
+    },
+    avatarInner: {
+      flex: 1,
+      borderRadius: (AVATAR - 4) / 2,
+      overflow: "hidden",
+      backgroundColor: c.surfaceDeep,
+    },
+    avatarImg: {
+      width: "100%",
+      height: "100%",
+    },
+    metaCol: {
+      flex: 1,
+      minWidth: 0,
     },
     name: {
       fontSize: 14,
@@ -131,8 +164,22 @@ export function DoctorQuotesSlider() {
         renderItem={({ item }) => (
           <View style={[styles.card, { width: CARD_WIDTH }]}>
             <Text style={styles.quote}>{item.quote}</Text>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.role}>{item.role}</Text>
+            <View style={styles.attributionRow}>
+              <View style={styles.avatarRing}>
+                <View style={styles.avatarInner}>
+                  <Image
+                    source={item.avatar}
+                    style={styles.avatarImg}
+                    contentFit="cover"
+                    accessibilityLabel={`Portrait of ${item.name}`}
+                  />
+                </View>
+              </View>
+              <View style={styles.metaCol}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.role}>{item.role}</Text>
+              </View>
+            </View>
           </View>
         )}
       />

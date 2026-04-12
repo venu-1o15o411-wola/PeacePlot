@@ -73,6 +73,7 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 | **Auth wave divider (light)** | **`assets/images/login/bg-shape.png`**                                 | Same structural role for **light** scheme (mirrors **`design/xhtml/assets/images/bg-shape.png`** on non-dark welcome/join areas).                                                                                 |
 | **Auth hero (sign-in)**   | **`assets/images/login/pic4.jpg`**                                           | **Sign-in** hero photo; mirrored from **`design/xhtml/assets/images/login/pic4.jpg`** (`login.html`).                                                                                                             |
 | **OAuth glyph assets**    | **`assets/images/login/facebook.png`**, **`assets/images/login/google.png`** | **Sign-in** “Or sign in with” row; mirrored from **`design/xhtml/assets/images/icons/`**.                                                                                                                         |
+| **Doctor quote avatars**  | **`assets/images/doctors/doctor-1.jpg`** … **`doctor-3.jpg`**                  | **Home** doctor-quotes slider (**§4.3**): circular portraits beside name/role; sourced from the same **`design/xhtml/assets/images/stories/small/`** story-thumb style as **`index.html`** “STORY” / post **`media-40`** patterns. |
 
 **Visual fit with §2.2:** The logo artwork is **blue-forward** with **gold / highlight** accents and **liquid / water** motifs (wordmark and circular mark with lotus). Implementation should place both assets on **dark** surfaces from **§2.2** so cyan–gold gradients read clearly; avoid light-gray page backgrounds behind **`peaceplot-loading.png`** unless the PNG is exported with **true transparency** for dark UI.
 
@@ -205,7 +206,7 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 **Home — landing page (primary dashboard):**
 
 - **Header:** Unchanged from **§4.1** (`peaceplot.png` left; chat, notifications, grid/drawer right).
-- **Famous doctors — slider / carousel:** Short **quotes or sayings** from credentialed / trust-layer doctors (copy + attribution; optional portrait). Swipe or auto-advance with calm pacing; align with **§5.4**.
+- **Famous doctors — slider / carousel:** Short **quotes or sayings** from credentialed / trust-layer doctors (copy + attribution; **circular avatar** beside name/role, **`expo-image`**, assets under **`assets/images/doctors/`** per **§2.4**). Swipe with calm pacing; align with **§5.4**. *(Implemented in **`src/components/doctor-quotes-slider.tsx`**.)*
 - **Measure — 2×2 grid (hero):** Four large tappable tiles in a **two-column, two-row** layout. Each tile is **visually strong**: **icon-forward** (high-quality vector or custom artwork), clear label, and primary/highlight styling consistent with **§2.2**:
   1. **Camera** — face / visual capture for estimation (privacy consent before first use).
   2. **Fingerprint** — biometric path as defined in product (signal or quick check-in per §5.1).
@@ -242,6 +243,14 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 - **Chatbot** for automated Q&A / triage into content.
 - **Comments:** **Threaded (“tree”) comments only** (no flat-only mode required).
 - **Reactions:** **Thumb up / like** as specified; other reactions only if added later.
+
+**Forum — implemented UI (scaffold, mock data):**
+
+- **Route:** Tab **`forum`** → stack under **`src/app/(drawer)/(tabs)/forum/`** — **`index`** (`ForumHub` in **`src/components/forum-hub.tsx`**), **`chatbot`**, **`article/[id]`**, **`room/[id]`**; **`src/data/forum-mock.ts`** supplies lists until Supabase.
+- **Hub:** Intro, **community guidelines** alert (research §9 — safety, crisis copy, reporting, opt-in search), **search**, chips (**All** / **Articles** / **Chat rooms** / **Chatbot**), **PeacePlot assistant** row, article rows (meta: author, time, read length, comment/like counts), chat room rows (topic, member estimate, optional **LIVE** badge) — density aligned with **`design/xhtml/`** post/list patterns.
+- **Article detail:** Body copy (placeholder by article id), **like** on article (placeholder alert to backend), **threaded comments** rendered recursively (tree only), wellness footer.
+- **Room detail:** Topic + placeholder for realtime chat; **Find people (planned)** → alert citing **opt-in discoverability** and rate limits (research §9 / plan §5.3).
+- **Chatbot screen:** Disabled composer + **SEND** placeholder + crisis footer; full AI + safety classifiers deferred to **§6.1**.
 
 **Journal** (drawer — not a tab):
 
@@ -402,4 +411,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-11_
+_Last updated: 2026-04-12_
