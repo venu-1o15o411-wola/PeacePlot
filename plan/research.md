@@ -1,6 +1,6 @@
 # PeacePlot — Research notes & market landscape
 
-Informal synthesis for **PeacePlot** planning, aligned with **`plan/plan.md`**. This is **not medical advice**, not an endorsement of any vendor, and not a substitute for legal or clinical review. Product names appear as **publicly documented examples** of patterns relevant to your scope (AI estimation, voice, libraries, community, wearables, location).
+Informal synthesis for **PeacePlot** planning, aligned with **`plan/plan.md`**. This is **not medical advice**, not an endorsement of any vendor, and not a substitute for legal or clinical review. Product names appear as **publicly documented examples** of patterns relevant to your scope (AI estimation, voice-as-measurement, **Discover** library, **Sleep** tab, **Forum**, **Journal** in drawer, wearables, location).
 
 Companion: [`plan.md`](./plan.md) (IA, features, build phases).
 
@@ -8,9 +8,9 @@ Companion: [`plan.md`](./plan.md) (IA, features, build phases).
 
 ## 1. How to use this document
 
-- **§2–8** summarize **recent market and research directions** (roughly 2023–2026) that overlap PeacePlot’s pillars: **stress estimation**, **character/personalization**, **dataset libraries**, **Audio + voice AI**, **Relax Hub**, **Forum**, **trust content**, **wearables**, **location**.
-- **§9** maps takeaways to **`plan.md`** explicitly.
-- **§10** lists **risks, compliance, and moderation** pressures called out in research.
+- **§2–13** summarize **recent market and research directions** (roughly 2023–2026), including a dedicated **sleep apps** section (**§6**).
+- **§10** maps takeaways to **`plan.md`** explicitly.
+- **§11** lists **risks, compliance, and moderation** pressures called out in research.
 
 When building UI, **`design/`** (see `plan.md` §2) remains the visual reference; this file informs **behavior and positioning**, not pixels.
 
@@ -28,7 +28,7 @@ Large meditation / sleep products (**Calm**, **Headspace**, **Insight Timer**) s
 
 **Implications for PeacePlot**
 
-- **Mixed media libraries** fail when every row looks the same: differentiate **books vs video vs audio vs movement** with duration, modality icons, and context (“2 min listen”, “15 min read”)—already aligned with your **Relax Hub** and **dataset-type gating** (`plan.md` §3.1, §4.3).
+- **Mixed media libraries** fail when every row looks the same: differentiate **books vs video vs audio vs movement** with duration, modality icons, and context (“2 min listen”, “15 min read”)—already aligned with your **Discover** tab and **dataset-type gating** (`plan.md` §3.1, §4.3).
 - **AI recommendation** is now a **table-stakes expectation** among heavy users of meditation apps; your differentiator is **stress estimation + character + explicit dataset preferences**, not “generic For You.”
 
 ---
@@ -40,7 +40,7 @@ Large meditation / sleep products (**Calm**, **Headspace**, **Insight Timer**) s
 **Patterns relevant to `plan.md`:**
 
 - **Structured check-ins** + **conversation** as the “front end” for skills (maps to your **stress estimation** + **chatbot** in **Forum**).
-- **Insights over time** from repeated interactions (maps to **Insight** tab and **character** summaries).
+- **Insights over time** from repeated interactions (maps to **Journal** / history surfaces and **character** summaries—`plan.md` places **Journal** in the **drawer**, not the tab bar).
 - **Wearable sync** appears in some products (e.g. Youper’s public materials mention **Apple Health / Fitbit**-class integrations)—relevant to your **smart watch** modality (`plan.md` §5.1, §7).
 
 **Clinical / regulatory note:** **Woebot Health** has pursued **FDA Breakthrough Device Designation** for specific **prescription digital therapeutic** programs (e.g. postpartum-focused WB001, per public press and trial listings). That path is **not** required for a general wellness app, but it shows how **serious** AI + CBT products separate **marketing claims** from **evidence and oversight**.
@@ -48,29 +48,28 @@ Large meditation / sleep products (**Calm**, **Headspace**, **Insight Timer**) s
 **Implications for PeacePlot**
 
 - **Crisis safety:** Any AI chat or forum-adjacent feature should assume **self-harm / crisis** protocols (escalation copy, hotlines, optional blocking)—industry baseline for mental-health-adjacent chat.
-- **Transparency:** Users should see **what inputs** changed recommendations (check-in vs wearable vs questionnaire)—matches your **gating** step and **Insight** history (`plan.md` §3).
+- **Transparency:** Users should see **what inputs** changed recommendations (check-in vs wearable vs questionnaire)—matches your **gating** step and history/journaling surfaces (`plan.md` §3).
 
 ---
 
-## 4. Voice-first mental wellness (Audio tab, voice AI agent)
+## 4. Voice for measurement vs. voice assistants
 
-Commercial and research directions show **voice** as viable for **coaching** and **skills**, with caveats on **privacy**, **robotic voice quality**, and **installation friction**.
+Commercial and research directions show **voice** as viable for **coaching** and **skills**, with caveats on **privacy**, **robotic voice quality**, and **installation friction**. **`plan.md`** now treats **microphone / speech-to-text** primarily as **stress measurement** (Home **Measure** grid and **Measure** tab), **not** as a standalone “Audio” entertainment tab.
 
 **Examples / evidence:**
 
-- **Ember Health** (App Store listing) markets a **voice-first AI coach** for anxiety, sleep, and daily stress with **real-time** conversation—illustrates user-facing positioning for **voice-primary** wellness (not an endorsement).
-- Research prototypes such as **Lumen** (voice-only virtual coach for problem-solving treatment) report **high usability** with needs for **pacing** and **personalization**—useful when designing your **voice AI** turn-taking and fallbacks (`plan.md` §5.5).
-- Studies on **Alexa-class** assistants for parenting support (e.g. 2024 feasibility work) highlight **trust**, **privacy**, and **voice quality** as adoption barriers—relevant to mic permission and **offline** disappointment handling.
-- Comparative evaluations of **Siri / Alexa / Google Assistant** answers to mental-health queries (academic literature) find **uneven quality** by condition—motivation for **in-app** curated responses rather than delegating to the OS assistant.
+- **Ember Health** (App Store listing) markets a **voice-first AI coach** for anxiety, sleep, and daily stress—useful reference for **optional** assistant patterns, not a requirement to duplicate (`plan.md` §5.5).
+- Research prototypes such as **Lumen** (voice-only virtual coach) report **high usability** with needs for **pacing** and **personalization**—relevant if PeacePlot adds **optional** voice navigation later.
+- Studies on **Alexa-class** assistants highlight **trust**, **privacy**, and **voice quality** as adoption barriers—relevant to **mic** permission for **measurement** flows on **Home**.
 
 **Implications for PeacePlot**
 
-- Treat **voice AI** as **optional** alongside touch: clear **mic** consent, **visual** state for recording/listening, and **recovery** when ASR fails.
-- **Audio** tab (`plan.md` §4.2) is the natural **home** for voice sessions; **deep links** from **Home** / **Forum** avoid hiding voice behind multiple taps.
+- For **speech-to-text** estimation: clear **mic** consent, **recording** state UI, and **recovery** when ASR fails—**Measure** and **Home** tiles, not a music tab.
+- **Playback** of sleep or meditation audio belongs under **`plan.md`** **Sleep** and **Discover**, separate from **measurement** audio.
 
 ---
 
-## 5. Mood tracking, CBT journeys, gamification (Insight, character, Relax Hub)
+## 5. Mood tracking, CBT journeys, gamification (Journal, character, Discover)
 
 **Sanvello** historically exemplified **mood tracking**, **guided journeys**, **journaling**, and **community boards**; public reviews note transitions under **AbleTo** branding for some offerings—illustrates **M&A** and **payer** paths, not a feature template.
 
@@ -81,11 +80,46 @@ Commercial and research directions show **voice** as viable for **coaching** and
 **Implications for PeacePlot**
 
 - **Character / personality** outputs should avoid **overfitting labels** (“you are X type”) unless you want that UX; trend is **soft** profiles used for **routing** content.
-- **Insight** should prioritize **clarity** over charts-for-charts’-sake: stressed users abandon dense dashboards.
+- **Journal / history** surfaces (drawer in `plan.md`) should prioritize **clarity** over charts-for-charts’-sake: stressed users abandon dense dashboards.
 
 ---
 
-## 6. Wearables & biometric “stress” (smartwatch modality)
+## 6. Sleep apps — recent successful products and their strengths
+
+PeacePlot’s dedicated **Sleep** tab (`plan.md` §4.2, §5.6) should borrow patterns from category leaders without cloning their branding. Below are **publicly documented strengths** (pros) commonly cited for major sleep apps—useful for **feature prioritization** and **UX quality bars**.
+
+### Sleep Cycle
+
+- **Pros:** **Contactless** phone-based sleep tracking (patented approach per vendor materials), **sleep stage** visualization, **smart alarm** window to wake in lighter sleep, **snoring / sound** recording features, **trends** over time—strong **habit loop** (check each morning).
+- **Takeaway:** Users value **actionable morning feedback** and **gentle wake** more than raw data alone.
+
+### BetterSleep (formerly Relax Melodies)
+
+- **Pros:** **Layered sound mixer** (combine rain, noise colors, nature), large **library** of mixes, **sleep tracking** session logs, **SleepTales** / guided content—excellent **customization** for people who know what sounds work for them.
+- **Takeaway:** **Personalization** of sound stacks increases perceived control; **offline** downloads matter for travel (per third-party reviews).
+
+### Calm Sleep (Calm’s dedicated sleep app / Calm sleep vertical)
+
+- **Pros:** Very large **sleep story** and **narrated** catalog, **celebrity** narrators as marketing hooks, **sleep plans** / **readiness** style framing (per Calm blog), **HealthKit**-class sync in marketing materials—positions sleep as **routine**, not one-off audio.
+- **Takeaway:** **Narrative + habit** beats anonymous white noise for retention; **integration** with Apple Health supports **whole-person** positioning.
+
+### Headspace Sleep
+
+- **Pros:** **Tight integration** with broader mindfulness brand, **wind-down** and **sleepcasts** with consistent **voice** and **production**—low cognitive load at bedtime.
+- **Takeaway:** **Consistency of tone** and **predictable session length** reduce bedtime friction.
+
+### Cross-cutting pros to emulate in PeacePlot
+
+| Strength | Why it helps |
+| -------- | ------------ |
+| **Clear bedtime purpose** | Dedicated **Sleep** tab signals “this is for tonight,” separate from **Discover** browsing. |
+| **Sound + story + schedule** | Mix **passive** listening with **optional** structure (reminders, wind-down). |
+| **Trust & safety** | Sleep apps handle **vulnerable** moments; avoid **loud** ads or **jarring** UI at night (`plan.md` §2.2 dark theme helps). |
+| **Optional tracking** | Offer **value** without mandatory device tracking; respect users who only want **audio**. |
+
+---
+
+## 7. Wearables & biometric “stress” (smartwatch modality)
 
 Apple Watch–adjacent stress apps (**StressWatch**, **RelaxWatch**, **Stressly**, **StressPal**, etc.—per store listings and marketing pages) commonly combine:
 
@@ -101,7 +135,7 @@ Apple Watch–adjacent stress apps (**StressWatch**, **RelaxWatch**, **Stressly*
 
 ---
 
-## 7. Location & “places” (Relax Hub, Home)
+## 8. Location & “places” (Discover, Home)
 
 Dedicated **nature / walking** apps (**Wildling**, **Go Jauntly**, **Rewyld**, **NatureDose**, etc.) demonstrate **permission-gated** discovery of **green space**, **walks**, and **time-in-nature** goals—close to your **location-based famous places** idea (`plan.md` §3.1, §4.3).
 
@@ -112,7 +146,7 @@ Dedicated **nature / walking** apps (**Wildling**, **Go Jauntly**, **Rewyld**, *
 
 ---
 
-## 8. Community, forums, articles, moderation (Forum tab)
+## 9. Community, forums, articles, moderation (Forum tab)
 
 Peer support products historically combine **discussion boards**, **groups**, and **guided content**. Academic work (2025–2026, **JMIR** family) stresses:
 
@@ -127,20 +161,21 @@ Peer support products historically combine **discussion boards**, **groups**, an
 
 ---
 
-## 9. Mapping research → `plan.md` (quick matrix)
+## 10. Mapping research → `plan.md` (quick matrix)
 
 | `plan.md` topic | What market/research suggests |
 |-----------------|-------------------------------|
-| **§4.2 Five tabs** | Splitting **library** (Relax Hub), **social** (Forum), **trends** (Insight), and **audio/voice** (Audio) matches how large apps **separate** concerns to reduce overload. |
+| **§4.2 Five tabs** | **Home** + **Discover** (library) + **Measure** (center, emphasis) + **Forum** + **Sleep** separates **browsing**, **measurement**, **social**, and **bedtime**—reduces cognitive overload. |
 | **§3.1 Dataset gating before recommendations** | Aligns with **preference elicitation** before **AI for You** flows (Insight Timer–style intention flows; streaming “taste picker” metaphors). |
-| **§5.5 Voice AI agent** | Voice wellness products and studies emphasize **trust**, **fallbacks**, and **privacy**; **Audio** tab as hub matches **voice-first** apps’ entry points. |
+| **§5.5 Voice as measurement** | Mic **trust** and **ASR** fallbacks matter; **no** separate “Audio” tab—see **§6** (this file) vs. **Sleep**/**Discover** playback. |
 | **§5.1 Multi-modal estimation** | Wearable stress apps show **HRV** UX norms; **camera / fingerprint** need **consent** clarity distinct from **questionnaires**. |
+| **§5.6 Sleep tab** | **§6** (this file): borrow **smart alarm**, **layered sounds**, **stories**, and **Health** sync patterns from leaders. |
 | **§5.3 Communities** | Moderation research supports **phased** community rollout and **investment** in moderator tooling if UGC scales. |
-| **§5.4 Trust / doctors’ content** | Headspace / Insight Timer show **professional** and **teacher** brands as trust anchors; your **famous doctors** lane should **cite credentials** and avoid **implied endorsement**. |
+| **§5.4 Trust / doctors’ content** | **Home slider** + **Discover** doctor content should **cite credentials**; Calm/Headspace show **professional** trust anchors. |
 
 ---
 
-## 10. Risks, compliance, and product hygiene
+## 11. Risks, compliance, and product hygiene
 
 - **Medical claims:** Wellness framing (“support,” “skills,” “self-help”) vs **treatment** claims—especially with **AI** and **biometrics**.
 - **Crisis handling:** Chatbot + forum require **escalation** paths; copy should be **tested** with clinical advisors if scope grows.
@@ -150,7 +185,7 @@ Peer support products historically combine **discussion boards**, **groups**, an
 
 ---
 
-## 11. Suggested follow-up (technical / policy)
+## 12. Suggested follow-up (technical / policy)
 
 - Apple **Human Interface Guidelines** and Google **Material** guidance for **health**, **microphone**, **camera**, **location**, and **Health Connect / HealthKit** disclosure screens.
 - **OWASP** / platform guidance for **chat** abuse and **PII** in search (email lookup).
@@ -158,16 +193,16 @@ Peer support products historically combine **discussion boards**, **groups**, an
 
 ---
 
-## 12. Prior research retained (UX fundamentals)
+## 13. Prior research retained (UX fundamentals)
 
 These points remain valid regardless of competitor churn:
 
 - **Emotional tone first** — Stressed users need **approachability** and **safety**, not dense dashboards.
 - **Fewer decisions per session** — Primary actions (check-in, play, breathe) stay **shallow**; secondary features one level down.
-- **Audio-first affordances** — Large controls, clear play/pause, **thumb-zone** layouts (`plan.md` **Audio** tab).
+- **Audio-first affordances (playback)** — Large controls, clear play/pause, **thumb-zone** layouts for **Sleep** and **Discover** media (`plan.md` §4.2).
 - **Loading / error copy** — Avoid generic “Something went wrong”; prefer **short**, **actionable** lines that do not **increase** anxiety.
-- **Fingerprint** — Often fits **auth** or **settings** better than primary navigation unless product intent is **biometric check-in** (`plan.md` §5.1).
+- **Fingerprint** — In `plan.md`, fingerprint is a **Home / Measure** modality for estimation (§4.3, §5.1), not only auth.
 
 ---
 
-_Last updated: 2026-04-11_
+_Last updated: 2026-04-13_

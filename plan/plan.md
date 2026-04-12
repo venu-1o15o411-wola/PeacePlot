@@ -1,6 +1,6 @@
 # PeacePlot — Product & build plan
 
-This document is the **project-level plan** for the PeacePlot healthcare app (stress reduction). **Implementation work should follow this plan**, the **functional requirements** captured below, and the repo’s **`design/`** reference (§2). Visual specs follow **`design/xhtml/`** patterns with a **dark theme and blue accent** (§2.2).
+This document is the **project-level plan** for the PeacePlot healthcare app (stress reduction). **Implementation work should follow this plan**, the **functional requirements** captured below, and the **`design/`**-based UI system (**§2**): **all** screens use that style, **dark theme** by default, **blue** primary accent.
 
 Companion document: [`research.md`](./research.md) (industry notes and design rationale).
 
@@ -8,11 +8,22 @@ Companion document: [`research.md`](./research.md) (industry notes and design ra
 
 ## 1. Vision
 
-Help users **understand and reduce stress** through **AI-assisted estimation**, **character-aware** guidance, a rich **content library**, and **community** features—delivered in a **calm, trustworthy** mobile-first experience. Visual and interaction design follows the **Soziety-based reference in `design/`** (headers, lists, cards, drawers, bottom navigation). Industry patterns from established wellness apps inform defaults only where this plan does not specify otherwise.
+Help users **understand and reduce stress** through **AI-assisted estimation**, **character-aware** guidance, a rich **Discover** library, **sleep** support, and **community** features—delivered in a **calm, trustworthy** mobile-first experience. **Home** is the **landing** hub (doctor quotes + **2×2 Measure** grid); **Journal** lives in the **left drawer**, not the tab bar. **Every feature and page** should follow the **`design/`** templates (structure, spacing, typography, cards, lists, navigation) and the **dark + blue** theme (**§2**). Industry patterns from established wellness apps inform defaults only where this plan does not specify otherwise.
 
 ---
 
 ## 2. Design source of truth (`design/` folder)
+
+### 2.0 Mandatory compliance — all features & pages
+
+Building the app in Expo is **not** a greenfield visual redesign. The repo’s **`design/`** tree contains **many** HTML templates under **`design/xhtml/`** (auth, feeds, profile, settings, messaging, UI kits, etc.). Implementation **must**:
+
+1. **Match the template style** — For each PeacePlot screen, identify the **closest** `design/xhtml/*.html` (or component pattern in `assets/css/style.css` / SCSS sources) and mirror **layout** (header, content area, lists, cards, forms, tabs, drawer), **density**, and **interaction rhythm** (e.g. scrollable body, fixed header, bottom bar safe area).
+2. **Default theme: dark + blue** — Ship **dark surfaces** and **blue** primary (`§2.2`). Do **not** use the template’s **orange** default accent for PeacePlot UI. Do **not** default to a light-only theme; if a light mode is added later, it is **optional** and secondary to the dark + blue product default.
+3. **Tokens, not one-off hex** — Map UI to the **§2.2** token set (aligned with `_theme-color.scss` **blue** preset and `_theme-view.scss` **`.theme-dark`**). New components should look like they belong beside existing **template-derived** screens.
+4. **PeacePlot branding** — Replace template logos with **`assets/images/`** assets (**§2.4**); keep layout from **`design/`**.
+
+Screens that bypass this system require an **explicit plan change** (see **§9**).
 
 ### 2.1 What’s in the repo
 
@@ -40,8 +51,8 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 ### 2.3 Expo translation (plan-level)
 
-- **Single theme module** mirroring §2.2 (and naming aligned to template `--*` variables where useful).
-- **Components** rebuilt from **`design/xhtml/`** with React Native + shared primitives; match **spacing, ~12px radius, header and bottom bar structure**.
+- **Single theme module** mirroring §2.2 (and naming aligned to template `--*` variables where useful)—applied **globally** so every route shares the same dark + blue defaults (**§2.0**).
+- **Components** rebuilt from **`design/xhtml/`** with React Native + shared primitives; match **spacing, ~12px radius, header and bottom bar structure** for **all** tab roots and stacked screens.
 - **Gradients:** `expo-linear-gradient` (or equivalent) for blue gradients from `_theme-color.scss`.
 - **Icons:** One consistent approach (`@expo/vector-icons` and/or SVG); map roles (nav, header actions, status), not necessarily every template glyph.
 - **Branding & loading:** Use repo assets in **`assets/images/`** per **§2.4** (not the Soziety template logos).
@@ -72,7 +83,7 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 - **Auth:** `login.html`, `register.html`, `welcome.html`, `otp-confirm.html`.
 - **Profile / settings:** `account.html`, `setting.html`, `profile.html`.
-- **Feeds, lists, notifications:** `index.html`, `notification.html` — density for **Relax Hub**, **Forum**, and **Insight** lists.
+- **Feeds, lists, notifications:** `index.html`, `notification.html` — density for **Discover**, **Forum**, and list-heavy surfaces.
 - **Drawer / menu:** Template **menu-toggler** / offcanvas patterns — map to **left drawer** triggered by the header grid icon (§4.2).
 - **Messaging / social:** `message`-related HTML where present — patterns for **chat rooms** and **chatbot** threads.
 
@@ -84,25 +95,50 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 1. **AI-driven stress estimation** produces a result that, together with **character profile** data, feeds **automatic recommendations** for stress-relief methods.
 2. **Gating step (required):** After stress estimation completes and **before** the user receives **AI recommendations**, they must **select which dataset types** they are interested in (see §5.2). Recommendations are then scoped or weighted by those choices.
-3. **Voice AI agent:** A **voice-forward assistant** should drive **as many app functions as practical** (navigation, starting flows, playback control, search—exact scope phased; see §5.5). The **Audio** tab is the primary home for voice and audio experiences (§4.2).
+3. **Optional voice assistance (phased):** If included, a **voice-forward assistant** may help with navigation or starting flows—**not** a substitute for the **Measure** entry points. **Audio** in PeacePlot means **voice / audio input used for stress measurement** (e.g. speech-to-text), **not** a standalone music or entertainment hub (§4.2, §5.1, §5.5).
 4. **Location-aware suggestions:** Recommend **local “famous” or notable places** that may help ease stress, **scoped by country or locality** (privacy, permissions, and data sourcing to be defined in implementation).
 5. **Trust layer:** Surface **credentialed or “famous stress doctor”** content (biographies, articles, books, videos, speeches) to build user confidence (§5.4).
 
 ### 3.2 Typical journey (high level)
 
+**Navigation shell** (after sign-in): one **header**, **five bottom tabs**, and a **left drawer** from the grid icon (§4.1–4.2).
+
 ```mermaid
-flowchart LR
-  A[Auth / signup] --> B[Home / entry]
-  B --> C[Stress estimation]
-  C --> D[Dataset type selection]
-  D --> E[AI recommendations]
-  E --> F[Relax Hub content / places / activities]
-  F --> G[Forum / chat / articles]
-  B --> H[Insight / character]
-  B --> I[Audio / voice AI]
+flowchart TB
+  Auth([Auth / signup]) --> Shell([Authenticated shell])
+
+  Shell --> Header[Header: peaceplot logo · chat · notifications · drawer trigger]
+  Shell --> Tabs
+  Shell --> Drawer
+
+  subgraph Tabs["Bottom tabs"]
+    direction LR
+    H[Home]
+    D[Discover]
+    M["Measure — center, emphasized"]
+    F[Forum]
+    S[Sleep]
+  end
+
+  subgraph Drawer["Left drawer — grid icon"]
+    direction TB
+    P[Profile]
+    J[Journal]
+    L[Logout]
+  end
 ```
 
-Repeat visits: users return to **Insight** for history, **Relax Hub** for library content, **Forum** for community, **Audio** for voice and audio modalities.
+**Core loop** (stress → recommendations → content):
+
+```mermaid
+flowchart LR
+  A[Home or Measure tab] --> B[Stress estimation]
+  B --> C[Dataset type selection]
+  C --> D[AI recommendations]
+  D --> E[Discover · Forum · Sleep · places · trust content]
+```
+
+Repeat visits: **Home** for landing (doctor quotes, **2×2 Measure** grid) and quick entry; **Discover** for the library; **Measure** for the highlighted stress hub; **Sleep** for sleep content; **Forum** for community; **Profile** / **Journal** / **Logout** from the **left drawer** (§4.1).
 
 ### 3.3 Character analysis
 
@@ -122,38 +158,58 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 - **Header — right (three actions):**
   1. **Chat** — entry to **messaging / chat rooms** (and/or chatbot entry, depending on product routing).
   2. **Notifications** — alerts (estimation reminders, replies, system); list/detail pattern like `notification.html`.
-  3. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Use template **drawer / sidebar** interaction patterns. Menu items will **grow over time**; architect routes as a **configurable list** (profile, settings, trust/doctors, help, legal, future entries).
+  3. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Use template **drawer / sidebar** interaction patterns. **For now**, the drawer lists at minimum: **Profile**, **Journal**, and **Logout** (plus any header/branding block per **`design/`**). Architect as a **configurable list** so more items (settings, trust/doctors, help, legal, etc.) can be added later. **Journal** stays out of the bottom tab bar (§4.2).
 
 ### 4.2 Bottom navigation (five tabs, fixed)
 
-| Tab           | Working name | Primary purpose                                                                                   | Notes                                                                                                                                                               |
-| ------------- | ------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Home**      | `home`       | Dashboard, entry to **stress estimation**, shortcuts, trust teasers, maybe **local places** entry | Template `index.html`-style feed/dashboard density where useful.                                                                                                    |
-| **Insight**   | `insight`    | **Stress history**, **estimation results** over time, **character analysis** outputs, trends      | Charts/cards; reference list/card components from `design/`.                                                                                                        |
-| **Audio**     | `audio`      | **Voice AI agent**, **music**, **story/audio** content, speech-related estimation affordances     | Central place for **voice** and **audio datasets**; voice agent deep-links from here. Replaces older “voice-only slot in tab bar” ideas—**Audio is the voice tab**. |
-| **Relax Hub** | `relax-hub`  | **Dataset library:** books, video, image, story, music, **Yoga & Tai Chi**, **AI advice** content | Browse/filter by type; aligns with “datasets” in requirements.                                                                                                      |
-| **Forum**     | `forum`      | **Articles**, **chat rooms**, **chatbot** access, community                                       | Article list/detail, threaded discussion surfaces; see §5.3.                                                                                                        |
+Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · **Sleep**.
 
-**Expo routing note:** Map these to **`expo-router`** tab routes under a shared `(app)` layout with the **global header** and **theme** from §2.
+| Tab | Working name | Primary purpose | Notes |
+| --- | ------------ | --------------- | ----- |
+| **Home** | `home` | **Landing** experience: see **§4.3** (header, doctor-quotes slider, **2×2 Measure** grid). Entry to **stress estimation** and trust content. | Default tab after sign-in. |
+| **Discover** | `discover` | **Content library** (replaces “Relax Hub”): books, video, image, story, music, **Yoga & Tai Chi**, **AI advice**, location/places—browse and filter. | Dataset-type gating still applies before recommendations (§3.1). |
+| **Measure** | `measure` | **Stress measurement** hub — **icon-only** (or label optional); must **visually dominate** the tab bar vs. other four tabs (larger glyph, primary color ring, raised / “FAB”-style attach, or similar). Routes into the **same measurement modalities** as Home’s grid (camera, fingerprint, audio-for-measurement, question). | **Not** a music or entertainment tab; **audio** here = **capture for estimation** (speech-to-text), not playback library. |
+| **Forum** | `forum` | **Articles**, **chat rooms**, **chatbot**, community | See §5.3. |
+| **Sleep** | `sleep` | **Sleep feature set** (see §5.6): stories, sounds, wind-down, routines, scheduling—aligned with `research.md` sleep benchmarks. | Distinct from **Discover**; optimized for bedtime use. |
+
+**Removed from bottom navigation (vs. earlier drafts):** **Insight** tab — superseded by **Journal** in the **drawer** (§4.1). **Relax Hub** — renamed **Discover**. **Audio** tab — **removed**; audio is **only** a **modality under Measure / Home** for stress assessment, not a standalone tab.
+
+**Expo routing note:** Map these to **`expo-router`** tab routes under a shared `(app)` layout with the **global header** and **theme** from §2. The **Measure** tab may use a **custom tabBar** item or **higher z-index / scale** so the center control is unmistakable.
 
 ### 4.3 Major screens (by feature area)
 
-**Stress estimation (modal flow or stacked screens, can start from Home):**
+**Home — landing page (primary dashboard):**
 
-- Channel selection or progressive disclosure for inputs: **questions**, **speech-to-text**, **camera (face)**, **fingerprint**, **smart watch** (see phasing §7).
-- **Mandatory intermediate screen:** **Dataset type selection** (multi-select or categories) **after** estimation, **before** recommendation results.
+- **Header:** Unchanged from **§4.1** (`peaceplot.png` left; chat, notifications, grid/drawer right).
+- **Famous doctors — slider / carousel:** Short **quotes or sayings** from credentialed / trust-layer doctors (copy + attribution; optional portrait). Swipe or auto-advance with calm pacing; align with **§5.4**.
+- **Measure — 2×2 grid (hero):** Four large tappable tiles in a **two-column, two-row** layout. Each tile is **visually strong**: **icon-forward** (high-quality vector or custom artwork), clear label, and primary/highlight styling consistent with **§2.2**:
+  1. **Camera** — face / visual capture for estimation (privacy consent before first use).
+  2. **Fingerprint** — biometric path as defined in product (signal or quick check-in per §5.1).
+  3. **Audio** — **microphone / voice capture for stress measurement only** (speech-to-text or voice questionnaire)—**not** music playback; iconography must not imply “streaming” or “podcast.”
+  4. **Question** — structured questionnaire / check-in.
+- Tapping a tile opens the **corresponding estimation flow** (stacked screens or modal). The **Measure** tab (§4.2) should offer the **same four modalities** for users who start from the tab bar.
+
+**Stress estimation (modal flow or stacked screens — from Home grid or Measure tab):**
+
+- Inputs: **questions**, **speech-to-text (audio-for-measurement)**, **camera (face)**, **fingerprint**; **smart watch** phased (§7).
+- **Mandatory intermediate screen:** **Dataset type selection** **after** estimation, **before** recommendation results.
 
 **Recommendations & AI advice:**
 
-- Results screen(s) after gating: personalized **methods** and **content pointers** into Relax Hub / Forum / Audio as appropriate.
+- Results screen(s) after gating: personalized **methods** and **content pointers** into **Discover** / **Forum** / **Sleep** as appropriate.
 - **AI advice** as a **content type** and/or **inline** assistant copy—consistent with trust disclaimers (no medical claims unless compliance allows).
 
-**Relax Hub:**
+**Discover** (library; former Relax Hub):
 
 - **Books:** “Normal peaceful” books and **books from famous doctors** (filter or badges).
-- **Media:** video, image, **story (including audio)**, music.
-- **Activities:** **Yoga**, **Tai Chi** (sessions, lists, maybe video).
+- **Media:** video, image, **story** (narrative content; audio tracks for stories may live here as **content**, distinct from **measurement** audio on Home).
+- **Music** as **library content** (Discover), not the **Measure** audio modality.
+- **Activities:** **Yoga**, **Tai Chi**.
 - **Places:** **Location-based** “famous places” (map/list), permission-gated.
+
+**Sleep** (dedicated tab — §5.6):
+
+- Bedtime-focused **sleep stories**, **soundscapes**, **wind-down**, **schedules / reminders**, optional **sleep tracking** or **Health** integration—scoped in implementation; see **`research.md`** for competitive pros.
 
 **Forum & community:**
 
@@ -163,15 +219,9 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 - **Comments:** **Threaded (“tree”) comments only** (no flat-only mode required).
 - **Reactions:** **Thumb up / like** as specified; other reactions only if added later.
 
-**Insight:**
+**Journal** (drawer — not a tab):
 
-- **Character analysis** summaries and **question** history.
-- Estimation timeline and links to recommendations consumed.
-
-**Audio:**
-
-- **Voice AI** “command surface” and conversational UI.
-- Playback for **music** and **story** audio; link-outs to estimation **speech-to-text** where relevant.
+- **Reflective journaling**, entries, and optional ties to **stress check-ins** or **character** prompts. **Stress history / trends** (if not on Home or Discover) may link from Journal or a drawer sub-page—finalize IA in design lock.
 
 ### 4.4 Authentication & account (behavior)
 
@@ -189,14 +239,14 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 | Modality           | Role                                      | Planning note                                                                   |
 | ------------------ | ----------------------------------------- | ------------------------------------------------------------------------------- |
 | **Questions**      | Structured assessment                     | Core; drives scoring with AI layer.                                             |
-| **Speech-to-text** | Voice answers or journaling               | Core; ties to **Audio** and **Voice AI** stack.                                 |
+| **Speech-to-text** | Voice answers for **stress measurement**  | Core; **Measure** / **Home** audio tile—**not** a separate music/entertainment feature. |
 | **Camera (face)**  | Signals for estimation (or future affect) | **Privacy-sensitive**; explicit consent, platform rules, phased delivery.       |
 | **Fingerprint**    | Biometric convenience or signal           | Often **auth** vs. stress signal—clarify product intent; platform APIs; phased. |
 | **Smart watch**    | Physiological or activity context         | Integrate via HealthKit / Health Connect / wearables APIs; phased.              |
 
 Estimation **combines** available signals with **AI** to produce results used in §3.
 
-### 5.2 Datasets (Relax Hub / recommendations)
+### 5.2 Datasets (Discover / recommendations)
 
 - **Books:** Leisure/peaceful reading + **doctor-curated** lists.
 - **Media:** Video, image, **story** (with **audio**), **music**.
@@ -213,12 +263,19 @@ Estimation **combines** available signals with **AI** to produce results used in
 ### 5.4 Trust — “famous stress doctors”
 
 - **Content types:** Biographies, articles, books, videos, speeches.
-- **Surface in:** Home / Relax Hub / dedicated drawer entries as appropriate.
+- **Surface in:** Home (slider), **Discover**, **Sleep**, dedicated drawer entries as appropriate.
 
-### 5.5 Voice AI agent (cross-cutting)
+### 5.5 Voice as input (measurement) — not a standalone “Audio” product area
 
-- **Goal:** Voice command and dialogue to **open tabs**, **start estimation**, **open Relax Hub filters**, **play audio**, **start chatbot**, etc., within platform limits.
-- **Primary UI:** **Audio** tab + optional **floating** or **header-adjacent** entry if design requires parity with `design/` affordances.
+- **In-scope:** **Microphone** and **speech-to-text** as inputs to **stress estimation** (Home **Audio** tile, flows launched from **Measure** tab). Clear **mic** consent, recording states, and error handling.
+- **Out of scope for “Audio tab”:** There is **no** bottom tab for music, podcasts, or a generic voice assistant. **Playback** of sleep sounds, stories, or Discover media belongs under **Sleep** or **Discover**, not under “audio measurement.”
+- **Optional later:** A **voice assistant** that navigates the app or starts **Measure** remains **optional** and secondary to touch—if added, it does not replace the **Measure** hub semantics above.
+
+### 5.6 Sleep (dedicated tab)
+
+- **Purpose:** Support **sleep quality** and **bedtime routines** as a first-class area (aligned with competitive benchmarks in **`research.md`**).
+- **Typical contents (prioritize in implementation):** sleep **soundscapes** / **noise**, **sleep stories** or wind-down **audio**, **reminders** or schedule nudges, optional **tracking** or Apple/Google Health **sleep** data (privacy-reviewed).
+- **Relationship to Discover:** **Discover** is **broad wellness content**; **Sleep** is **focused** on wind-down and nightly use—reduce duplicate navigation by cross-linking when useful.
 
 ---
 
@@ -226,7 +283,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 - **Stack:** Expo (~55), React Native, **expo-router** for navigation.
 - **Platforms:** iOS, Android, Web (per Expo config).
-- **Structure:** Tab layout for **§4.2**; nested stacks per tab; **drawer** for **§4.1** grid icon; shared header component with **`assets/images/peaceplot.png`**; **splash / global loading** uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
+- **Structure:** Tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon (**Profile**, **Journal**, **Logout** for now); shared header component with **`assets/images/peaceplot.png`**; **splash / global loading** uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
 
 ### 6.1 Backend: Supabase (single platform)
 
@@ -247,9 +304,11 @@ Estimation **combines** available signals with **AI** to produce results used in
 | Sign-up / `userid` uniqueness / OAuth | Auth + Postgres unique constraints + profiles table |
 | Avatars | Storage bucket + public/signed URLs |
 | Stress history, character, recommendations | Postgres tables + RLS |
+| Journal entries | Postgres + RLS (user-owned rows) |
+| Sleep sessions / preferences (if tracked) | Postgres + optional Health sync via platform APIs |
 | Forum, articles, tree comments, likes | Postgres + optional Realtime |
 | Chat rooms | Realtime channels and/or Postgres-backed messages |
-| Voice / AI / external APIs | Edge Functions (secrets in Supabase env, not in Expo) |
+| Voice / STT / AI | Edge Functions (secrets in Supabase env, not in Expo); **measurement**-scoped |
 | Location / places | Postgres + external APIs via Edge Functions if needed |
 
 **Operational note:** Create the Supabase project early, apply schema and RLS in migrations (Supabase SQL editor or CLI), and align OAuth redirect URLs with the **Expo scheme** (`peaceplot` per `app.json`) and Supabase Auth settings.
@@ -258,18 +317,19 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 ## 7. Build phases (suggested)
 
-1. **Design lock** — Freeze **§4** IA (tabs, header, drawer), **§2.2** tokens, **`assets/images/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per tab.
-2. **Shell & navigation** — **`expo-router`** tabs (**Home**, **Insight**, **Audio**, **Relax Hub**, **Forum**), global **header** + **left drawer**, **theme** (§2), **splash + loading** screen using **`peaceplot-loading.png`** with **§2.4** animation, placeholder inner screens.
+1. **Design lock** — Freeze **§4** IA (five tabs + **Measure** emphasis, **Home** landing, drawer **Journal**), **§2.0** compliance (every screen maps to a **`design/xhtml/`** pattern), **§2.2** tokens (dark + blue default), **`assets/images/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per surface.
+2. **Shell & navigation** — **`expo-router`** tabs (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**), **custom tab bar** for **prominent center Measure** (§4.2), global **header** + **left drawer** (**Profile**, **Journal**, **Logout** — §4.1), **theme** (§2), **splash + loading** per **§2.4**, placeholder inner screens.
 3. **Supabase foundation** — Create project, configure **`.env`** from **`.env.example`**, wire **Auth** redirect URLs, baseline **schema** / **RLS** and **Storage** buckets per **§6.1**.
 4. **Auth** — Email/password + **`userid` uniqueness** + avatar via **Supabase Auth** + profiles table; **OAuth** Google / Microsoft / Apple per **§6.1**.
-5. **Stress estimation (MVP)** — **Questions** + **speech-to-text** path; result persistence; then **dataset type selection** → **recommendations** UI (can use mock AI).
-6. **Insight** — History, character summary screens.
-7. **Relax Hub** — Content browsing by type; hooks for **location** places.
-8. **Forum** — Articles list/detail, **tree comments**, **likes**; **chat rooms** + **user search**; **chatbot** entry.
-9. **Audio** — **Voice AI** integration (phased), music/story playback.
-10. **Trust content** — Doctor content surfaces.
-11. **Additional estimation channels** — Camera, fingerprint, smartwatch as prioritized.
-12. **Polish** — Accessibility, **loading/empty** states (reuse **`peaceplot-loading`** treatment where full-screen; keep **§2.4** reduce-motion behavior), performance, App Store privacy strings.
+5. **Home landing** — Header (§4.1), **doctor quotes** slider, **2×2 Measure** grid with **strong icons** (camera, fingerprint, audio-for-measurement, question) per **§4.3**.
+6. **Stress estimation (MVP)** — **Question** + **speech-to-text** paths; result persistence; **dataset type selection** → **recommendations** UI (can use mock AI); align **Measure** tab with same four modalities.
+7. **Discover** — Library browsing by content type; hooks for **location** places.
+8. **Journal** — Drawer **Journal** screens (entries, optional links to check-ins); **not** a tab.
+9. **Sleep** — Tab content: sounds, stories, wind-down—see **`research.md`** and **§5.6**.
+10. **Forum** — Articles list/detail, **tree comments**, **likes**; **chat rooms** + **user search**; **chatbot** entry.
+11. **Trust content** — Doctor slider copy, **Discover** surfaces, **§5.4**.
+12. **Additional estimation channels** — Camera, fingerprint, smartwatch as prioritized.
+13. **Polish** — Accessibility, **loading/empty** states (reuse **`peaceplot-loading`** where full-screen; **§2.4** reduce-motion), performance, App Store privacy strings.
 
 ---
 
@@ -289,4 +349,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-13_
+_Last updated: 2026-04-16_
