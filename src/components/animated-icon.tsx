@@ -126,7 +126,8 @@ const styles = StyleSheet.create({
   },
   backgroundSolidColor: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#208AEF',
+    /** PeacePlot dark surface — plan §2.2 */
+    backgroundColor: '#2c3f6d',
     zIndex: 1000,
   },
 });

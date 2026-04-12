@@ -61,10 +61,14 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 **Canonical paths (repo root–relative):**
 
-| Asset | Path | Use |
-| ----- | ---- | --- |
-| **Primary logo** | **`assets/images/peaceplot.png`** | **Header** (§4.1), **auth / welcome** branding, **drawer** header, **splash** companion if a wordmark is needed beside the loading mark, **share** previews where appropriate. |
-| **Loading / splash mark** | **`assets/images/peaceplot-loading.png`** | **App launch splash**, **full-screen loading** states (initial data fetch, auth bootstrap, heavy transitions), and **inline blocking loaders** where a centered brand treatment is preferred over a bare spinner. |
+| Asset                     | Path                                        | Use                                                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primary logo**          | **`assets/images/peaceplot.png`**           | **Header** (§4.1), **auth / welcome** branding, **drawer** header, **splash** companion if a wordmark is needed beside the loading mark, **share** previews where appropriate.                                    |
+| **Loading / splash mark** | **`assets/images/peaceplot-loading.png`**   | **App launch splash**, **full-screen loading** states (initial data fetch, auth bootstrap, heavy transitions), and **inline blocking loaders** where a centered brand treatment is preferred over a bare spinner. |
+| **Auth hero (sign-up)**   | **`assets/images/login/pic1.jpg`**          | **Sign-up** screen top photograph; mirrored from **`design/xhtml/assets/images/login/pic1.jpg`**.                                                                                                                 |
+| **Auth wave divider**     | **`assets/images/login/bg-shape-dark.png`** | Wavy edge between hero and form (dark theme), matching **`design/xhtml/`** `.welcome-area .join-area:after` using **`bg-shape-dark.png`**.                                                                        |
+| **Auth hero (sign-in)**   | **`assets/images/login/pic4.jpg`**          | **Sign-in** hero photo; mirrored from **`design/xhtml/assets/images/login/pic4.jpg`** (`login.html`).                                                                                                              |
+| **OAuth glyph assets**    | **`assets/images/login/facebook.png`**, **`assets/images/login/google.png`** | **Sign-in** “Or sign in with” row; mirrored from **`design/xhtml/assets/images/icons/`**.                                                                                        |
 
 **Visual fit with §2.2:** The logo artwork is **blue-forward** with **gold / highlight** accents and **liquid / water** motifs (wordmark and circular mark with lotus). Implementation should place both assets on **dark** surfaces from **§2.2** so cyan–gold gradients read clearly; avoid light-gray page backgrounds behind **`peaceplot-loading.png`** unless the PNG is exported with **true transparency** for dark UI.
 
@@ -81,7 +85,7 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 ### 2.5 Reference HTML files (patterns, not 1:1 pages)
 
-- **Auth:** `login.html`, `register.html`, `welcome.html`, `otp-confirm.html`.
+- **Auth:** `login.html`, `register.html`, `welcome.html`, `otp-confirm.html`. **`welcome.html`** → **§4.4.2** (`/`); **`login.html`** sign-in layout → **§4.4.3** (`/signin`).
 - **Profile / settings:** `account.html`, `setting.html`, `profile.html`.
 - **Feeds, lists, notifications:** `index.html`, `notification.html` — density for **Discover**, **Forum**, and list-heavy surfaces.
 - **Drawer / menu:** Template **menu-toggler** / offcanvas patterns — map to **left drawer** triggered by the header grid icon (§4.2).
@@ -101,11 +105,14 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 ### 3.2 Typical journey (high level)
 
+**Cold start:** The app opens on **`/`** — **Welcome** (splash + marketing carousel + auth CTAs; **§4.4.2**), then **sign-up** / **sign-in** as needed.
+
 **Navigation shell** (after sign-in): one **header**, **five bottom tabs**, and a **left drawer** from the grid icon (§4.1–4.2).
 
 ```mermaid
 flowchart TB
-  Auth([Auth / signup]) --> Shell([Authenticated shell])
+  Welcome([Welcome / splash — /]) --> Auth([Sign up / Sign in])
+  Auth --> Shell([Authenticated shell])
 
   Shell --> Header[Header: peaceplot logo · chat · notifications · drawer trigger]
   Shell --> Tabs
@@ -158,19 +165,32 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 - **Header — right (three actions):**
   1. **Chat** — entry to **messaging / chat rooms** (and/or chatbot entry, depending on product routing).
   2. **Notifications** — alerts (estimation reminders, replies, system); list/detail pattern like `notification.html`.
-  3. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Use template **drawer / sidebar** interaction patterns. **For now**, the drawer lists at minimum: **Profile**, **Journal**, and **Logout** (plus any header/branding block per **`design/`**). Architect as a **configurable list** so more items (settings, trust/doctors, help, legal, etc.) can be added later. **Journal** stays out of the bottom tab bar (§4.2).
+  3. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Visual and structural patterns follow the **Soziety-style** sidebar reference (blue user band, section labels, chevrons, settings block, footer)—see **§4.1.1** for what is implemented in the app. **Journal** stays out of the bottom tab bar (§4.2).
+
+### 4.1.1 Left navigation drawer (implemented UI)
+
+The Expo app implements the drawer in **`src/components/drawer-content.tsx`** with **`expo-router/drawer`** (`src/app/(drawer)/_layout.tsx`). Styling aligns with **`design/`** sidebar / offcanvas density and the **dark + blue** system (**§2.2**), using token **`drawerBody`** (deep navy, ~`#243460`) and **`drawerHeaderBlue`** (bright blue band, `#2196f3`).
+
+| Region                | Behavior                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Top (blue header)** | **User avatar** placeholder (rounded square, white border, person icon until Supabase profile photo). **Greeting** line: time-based (“Good Morning” / “Good Afternoon” / “Good Evening”). **Display name** placeholder: `Guest` until auth profile supplies a name.                                                                                                                 |
+| **MAIN MENU**         | Section title (all-caps). Rows: **icon + label + optional badge + chevron**. **Home** → returns to the **Home** tab; **Profile** / **Journal** → drawer routes; **Notification** (badge `1`) and **Chat** (badge `5`) → placeholder alerts until real screens exist; **Logout** → **`supabase.auth.signOut()`** when configured, then **`router.replace('/signin')`** (**§4.4.3**). |
+| **SETTINGS**          | Separator line. **Color Theme** → placeholder alert (future theme presets). **Dark Mode** → `Switch` (UI state; product default remains **dark + blue** per **§2.2**; full app-wide theme toggle can follow).                                                                                                                                                                       |
+| **Footer (pinned)**   | **`PeacePlot`** (bold) and **`App Version {version}`** via **`expo-constants`** (falls back to `1.0.0` if unset).                                                                                                                                                                                                                                                                   |
+
+The drawer width is ~**86%** of the screen (max **340px**). Rows use **Ionicons** for parity with vector icon usage elsewhere.
 
 ### 4.2 Bottom navigation (five tabs, fixed)
 
 Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · **Sleep**.
 
-| Tab | Working name | Primary purpose | Notes |
-| --- | ------------ | --------------- | ----- |
-| **Home** | `home` | **Landing** experience: see **§4.3** (header, doctor-quotes slider, **2×2 Measure** grid). Entry to **stress estimation** and trust content. | Default tab after sign-in. |
-| **Discover** | `discover` | **Content library** (replaces “Relax Hub”): books, video, image, story, music, **Yoga & Tai Chi**, **AI advice**, location/places—browse and filter. | Dataset-type gating still applies before recommendations (§3.1). |
-| **Measure** | `measure` | **Stress measurement** hub — **icon-only** (or label optional); must **visually dominate** the tab bar vs. other four tabs (larger glyph, primary color ring, raised / “FAB”-style attach, or similar). Routes into the **same measurement modalities** as Home’s grid (camera, fingerprint, audio-for-measurement, question). | **Not** a music or entertainment tab; **audio** here = **capture for estimation** (speech-to-text), not playback library. |
-| **Forum** | `forum` | **Articles**, **chat rooms**, **chatbot**, community | See §5.3. |
-| **Sleep** | `sleep` | **Sleep feature set** (see §5.6): stories, sounds, wind-down, routines, scheduling—aligned with `research.md` sleep benchmarks. | Distinct from **Discover**; optimized for bedtime use. |
+| Tab          | Working name | Primary purpose                                                                                                                                                                                                                                                                                                                | Notes                                                                                                                     |
+| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **Home**     | `home`       | **Landing** experience: see **§4.3** (header, doctor-quotes slider, **2×2 Measure** grid). Entry to **stress estimation** and trust content.                                                                                                                                                                                   | Default tab after sign-in.                                                                                                |
+| **Discover** | `discover`   | **Content library** (replaces “Relax Hub”): books, video, image, story, music, **Yoga & Tai Chi**, **AI advice**, location/places—browse and filter.                                                                                                                                                                           | Dataset-type gating still applies before recommendations (§3.1).                                                          |
+| **Measure**  | `measure`    | **Stress measurement** hub — **icon-only** (or label optional); must **visually dominate** the tab bar vs. other four tabs (larger glyph, primary color ring, raised / “FAB”-style attach, or similar). Routes into the **same measurement modalities** as Home’s grid (camera, fingerprint, audio-for-measurement, question). | **Not** a music or entertainment tab; **audio** here = **capture for estimation** (speech-to-text), not playback library. |
+| **Forum**    | `forum`      | **Articles**, **chat rooms**, **chatbot**, community                                                                                                                                                                                                                                                                           | See §5.3.                                                                                                                 |
+| **Sleep**    | `sleep`      | **Sleep feature set** (see §5.6): stories, sounds, wind-down, routines, scheduling—aligned with `research.md` sleep benchmarks.                                                                                                                                                                                                | Distinct from **Discover**; optimized for bedtime use.                                                                    |
 
 **Removed from bottom navigation (vs. earlier drafts):** **Insight** tab — superseded by **Journal** in the **drawer** (§4.1). **Relax Hub** — renamed **Discover**. **Audio** tab — **removed**; audio is **only** a **modality under Measure / Home** for stress assessment, not a standalone tab.
 
@@ -230,19 +250,48 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 - **OAuth providers:** **Google**, **Outlook (Microsoft)**, **Apple** — in addition to or paired with email/password per platform policy.
 - **Sign-in / recovery:** Flows consistent with **`design/xhtml/`** auth pages and §2.2 styling.
 
+#### 4.4.1 Sign-up screen (implemented UI)
+
+- **Routes:** **`/signup`** (`src/app/signup.tsx`); **`/signin`** — full sign-in UI (**§4.4.3**).
+- **Template reference:** Layout follows **`design/xhtml/register.html`** and the **`welcome-area` / `join-area`** pattern (see `design/xhtml/assets/css/style.css` under `.welcome-area`), with **dark + blue** tokens (**§2.2**) instead of the template’s orange primary.
+- **Hero & wave:** Top **~40%** viewport uses **`assets/images/login/pic1.jpg`**; the form sheet overlaps the hero with **`assets/images/login/bg-shape-dark.png`** as the **liquid** transition strip (same asset role as **`.theme-dark .welcome-area .join-area:after`**).
+- **Fields:** **Unique user ID** (maps to **`userid`** in **§4.4**), **email**, **password** with **show/hide** toggle; leading **icon boxes** use **blue** surfaces (`primaryDark` / primary family), not orange.
+- **Primary button:** Full-width **REGISTER** using **`PeacePlotColors.primary`** (`#2196f3`).
+- **Footer:** “Already have an account? **Sign in here**” links to **`/signin`**.
+- **Join-area layout (no `HERO_RATIO` change):** Reduced vertical padding/margins on the form block (title block, fields, **REGISTER**, footer) and slightly tighter input row height so the bottom section aligns like the template reference and fits one viewport on common phones; **`ScrollView`** kept for keyboard and very small screens.
+- **Backend:** When **`EXPO_PUBLIC_*`** Supabase env vars are set, **Register** calls **`supabase.auth.signUp`** with **`options.data.userid`**. Server-side **uniqueness** for `userid` remains to be enforced (Postgres unique constraint / profile table per **§6.1**).
+
+#### 4.4.2 Welcome & launch (implemented UI)
+
+- **Route:** **`/`** — **`src/app/index.tsx`** (default screen on app open).
+- **Template reference:** **`design/xhtml/welcome.html`** — **`loader-screen`** (splash) then **`content-body`** → **`welcome-area`** (**`bg-image`** + **`join-area`** with swiper, pagination, **CREATE ACCOUNT**, **SIGN IN**, forgot link).
+- **Splash phase (~2.6s, capped):** Full-screen **`PeacePlotColors.background`**; centered **`assets/images/peaceplot-loading.png`** with a gentle **scale “breath”** (**`react-native-reanimated`**, aligned with **§2.4** motion bar); tagline **`YOUR PATH TO STRESS-FREE LIVING`** in **`primaryLight2`** (copy aligned with the loading artwork).
+- **Welcome phase:** Hero **`assets/images/login/pic1.jpg`** (height from **`HERO_RATIO`** only — unchanged by this layout pass), **`bg-shape-dark.png`** wave, **horizontal** carousel (**three** PeacePlot slides) + **dot** pagination, **CREATE ACCOUNT** → **`/signup`**, **SIGN IN** → **`/signin`**, **Forgot your account?** → placeholder alert (recovery flow TBD).
+- **Join-area layout (no `HERO_RATIO` change):** Welcome body uses a **column `flex: 1`** under the hero (no outer vertical scroll); **`joinMain`** groups carousel + CTAs, **`joinInner`** uses **`justifyContent: 'space-between'`** so **Forgot** sits at the bottom; carousel viewport height is layout-tuned (**`CAROUSEL_H`**, not the hero). Tighter spacing on dots, buttons, and copy block so the screen fits **one viewport** on typical devices.
+- **Root layout:** **`src/app/_layout.tsx`** registers **`index`** first; the previous standalone **`AnimatedSplashOverlay`** solid-color intro was **removed** so launch branding lives on the welcome route with **`peaceplot-loading.png`** per **§2.4**.
+
+#### 4.4.3 Sign-in screen (implemented UI)
+
+- **Route:** **`/signin`** — **`src/app/signin.tsx`**.
+- **Template reference:** **`design/xhtml/login.html`** — **`welcome-area`** hero + **`join-area`**: title + intro, **email** + **password** fields (password visibility toggle), **Forgot Password** (right-aligned row), **SIGN IN**, **Or sign in with** + **Facebook** / **Google** glyphs, footer **Don’t have an account? Signup here** → **`/signup`**.
+- **Styling:** Same patterns as **`/signup`** (**§2.2** tokens, **`bg-shape-dark.png`** wave, card inputs, primary **SIGN IN**)—not the template’s orange accent.
+- **Assets:** Hero **`assets/images/login/pic4.jpg`**; social **`assets/images/login/facebook.png`**, **`google.png`** (from **`design/xhtml/assets/images/icons/`**).
+- **Behavior:** **`supabase.auth.signInWithPassword`** when configured; success → **`router.replace('/(drawer)/(tabs)')`**. **Forgot Password** and **OAuth** buttons are **placeholders** until recovery + provider flows per **§4.4** / **§6.1**.
+- **Layout:** Same as **Welcome** (**§4.4.2**): **`flex: 1`** page + **`formSheet`** with **`flex: 1`** / **`minHeight: 0`**, **`formInner`** **`justifyContent: 'space-between'`** (main block + footer row)—**no outer `ScrollView`** so the bottom sheet does not rubber-band vertically like a scroll page.
+
 ---
 
 ## 5. Feature scope (detailed)
 
 ### 5.1 Stress estimation — input modalities
 
-| Modality           | Role                                      | Planning note                                                                   |
-| ------------------ | ----------------------------------------- | ------------------------------------------------------------------------------- |
-| **Questions**      | Structured assessment                     | Core; drives scoring with AI layer.                                             |
+| Modality           | Role                                      | Planning note                                                                           |
+| ------------------ | ----------------------------------------- | --------------------------------------------------------------------------------------- |
+| **Questions**      | Structured assessment                     | Core; drives scoring with AI layer.                                                     |
 | **Speech-to-text** | Voice answers for **stress measurement**  | Core; **Measure** / **Home** audio tile—**not** a separate music/entertainment feature. |
-| **Camera (face)**  | Signals for estimation (or future affect) | **Privacy-sensitive**; explicit consent, platform rules, phased delivery.       |
-| **Fingerprint**    | Biometric convenience or signal           | Often **auth** vs. stress signal—clarify product intent; platform APIs; phased. |
-| **Smart watch**    | Physiological or activity context         | Integrate via HealthKit / Health Connect / wearables APIs; phased.              |
+| **Camera (face)**  | Signals for estimation (or future affect) | **Privacy-sensitive**; explicit consent, platform rules, phased delivery.               |
+| **Fingerprint**    | Biometric convenience or signal           | Often **auth** vs. stress signal—clarify product intent; platform APIs; phased.         |
+| **Smart watch**    | Physiological or activity context         | Integrate via HealthKit / Health Connect / wearables APIs; phased.                      |
 
 Estimation **combines** available signals with **AI** to produce results used in §3.
 
@@ -283,7 +332,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 - **Stack:** Expo (~55), React Native, **expo-router** for navigation.
 - **Platforms:** iOS, Android, Web (per Expo config).
-- **Structure:** Tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon (**Profile**, **Journal**, **Logout** for now); shared header component with **`assets/images/peaceplot.png`**; **splash / global loading** uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
+- **Structure:** **Default route** **`/`** — Welcome (**§4.4.2**); tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon — **§4.1.1** layout (user header, MAIN MENU incl. Home / Profile / Journal / Notification / Chat / Logout, SETTINGS, footer); stack routes **`signup`** (**§4.4.1**) / **`signin`** (**§4.4.3**); shared header component with **`assets/images/peaceplot.png`**; **launch splash** on Welcome uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
 
 ### 6.1 Backend: Supabase (single platform)
 
@@ -299,17 +348,17 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 **Feature mapping (high level):**
 
-| PeacePlot area | Supabase capability |
-| -------------- | ------------------- |
-| Sign-up / `userid` uniqueness / OAuth | Auth + Postgres unique constraints + profiles table |
-| Avatars | Storage bucket + public/signed URLs |
-| Stress history, character, recommendations | Postgres tables + RLS |
-| Journal entries | Postgres + RLS (user-owned rows) |
-| Sleep sessions / preferences (if tracked) | Postgres + optional Health sync via platform APIs |
-| Forum, articles, tree comments, likes | Postgres + optional Realtime |
-| Chat rooms | Realtime channels and/or Postgres-backed messages |
-| Voice / STT / AI | Edge Functions (secrets in Supabase env, not in Expo); **measurement**-scoped |
-| Location / places | Postgres + external APIs via Edge Functions if needed |
+| PeacePlot area                             | Supabase capability                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| Sign-up / `userid` uniqueness / OAuth      | Auth + Postgres unique constraints + profiles table                           |
+| Avatars                                    | Storage bucket + public/signed URLs                                           |
+| Stress history, character, recommendations | Postgres tables + RLS                                                         |
+| Journal entries                            | Postgres + RLS (user-owned rows)                                              |
+| Sleep sessions / preferences (if tracked)  | Postgres + optional Health sync via platform APIs                             |
+| Forum, articles, tree comments, likes      | Postgres + optional Realtime                                                  |
+| Chat rooms                                 | Realtime channels and/or Postgres-backed messages                             |
+| Voice / STT / AI                           | Edge Functions (secrets in Supabase env, not in Expo); **measurement**-scoped |
+| Location / places                          | Postgres + external APIs via Edge Functions if needed                         |
 
 **Operational note:** Create the Supabase project early, apply schema and RLS in migrations (Supabase SQL editor or CLI), and align OAuth redirect URLs with the **Expo scheme** (`peaceplot` per `app.json`) and Supabase Auth settings.
 
@@ -318,7 +367,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 ## 7. Build phases (suggested)
 
 1. **Design lock** — Freeze **§4** IA (five tabs + **Measure** emphasis, **Home** landing, drawer **Journal**), **§2.0** compliance (every screen maps to a **`design/xhtml/`** pattern), **§2.2** tokens (dark + blue default), **`assets/images/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per surface.
-2. **Shell & navigation** — **`expo-router`** tabs (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**), **custom tab bar** for **prominent center Measure** (§4.2), global **header** + **left drawer** (**Profile**, **Journal**, **Logout** — §4.1), **theme** (§2), **splash + loading** per **§2.4**, placeholder inner screens.
+2. **Shell & navigation** — **`expo-router`** default **`/`** Welcome (**§4.4.2**), tabs (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**), **custom tab bar** for **prominent center Measure** (§4.2), global **header** + **left drawer** per **§4.1.1** (Soziety-style sidebar, footer, settings row), stack **signup** (**§4.4.1**) / **signin** (**§4.4.3**), **theme** (§2), **splash + loading** per **§2.4**, placeholder inner screens.
 3. **Supabase foundation** — Create project, configure **`.env`** from **`.env.example`**, wire **Auth** redirect URLs, baseline **schema** / **RLS** and **Storage** buckets per **§6.1**.
 4. **Auth** — Email/password + **`userid` uniqueness** + avatar via **Supabase Auth** + profiles table; **OAuth** Google / Microsoft / Apple per **§6.1**.
 5. **Home landing** — Header (§4.1), **doctor quotes** slider, **2×2 Measure** grid with **strong icons** (camera, fingerprint, audio-for-measurement, question) per **§4.3**.
@@ -349,4 +398,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-16_
+_Last updated: 2026-04-12_
