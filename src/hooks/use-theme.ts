@@ -1,14 +1,19 @@
+import { usePeacePlotAppearance } from "@/context/peaceplot-appearance";
+import { PeacePlotPalettes } from "@/constants/peaceplot-theme";
+
 /**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
+ * Legacy shape for `ThemedText` / `ThemedView` — follows drawer **Dark Mode** preference
+ * (`PeacePlotAppearanceProvider`), not only OS `useColorScheme`.
  */
-
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
-
-  return Colors[theme];
+  const { scheme } = usePeacePlotAppearance();
+  const p = PeacePlotPalettes[scheme];
+  return {
+    text: p.text,
+    background: p.background,
+    backgroundElement: p.card,
+    backgroundSelected:
+      scheme === "dark" ? "rgba(255,255,255,0.08)" : "#e0e4eb",
+    textSecondary: p.textBody,
+  };
 }

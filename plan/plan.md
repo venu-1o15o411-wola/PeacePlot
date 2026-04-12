@@ -19,7 +19,7 @@ Help users **understand and reduce stress** through **AI-assisted estimation**, 
 Building the app in Expo is **not** a greenfield visual redesign. The repo’s **`design/`** tree contains **many** HTML templates under **`design/xhtml/`** (auth, feeds, profile, settings, messaging, UI kits, etc.). Implementation **must**:
 
 1. **Match the template style** — For each PeacePlot screen, identify the **closest** `design/xhtml/*.html` (or component pattern in `assets/css/style.css` / SCSS sources) and mirror **layout** (header, content area, lists, cards, forms, tabs, drawer), **density**, and **interaction rhythm** (e.g. scrollable body, fixed header, bottom bar safe area).
-2. **Default theme: dark + blue** — Ship **dark surfaces** and **blue** primary (`§2.2`). Do **not** use the template’s **orange** default accent for PeacePlot UI. Do **not** default to a light-only theme; if a light mode is added later, it is **optional** and secondary to the dark + blue product default.
+2. **Default theme: dark + blue** — Ship **dark surfaces** and **blue** primary (`§2.2`) as the **product default**. Do **not** use the template’s **orange** default accent for PeacePlot UI. **Light mode** is implemented app-wide (`§2.2`, `§6`): users can switch via the drawer **Dark Mode** toggle; palettes map to **`.theme-dark`** vs **`_variable.scss` / `:root`** light surfaces so auth and welcome screens stay aligned with the HTML templates.
 3. **Tokens, not one-off hex** — Map UI to the **§2.2** token set (aligned with `_theme-color.scss` **blue** preset and `_theme-view.scss` **`.theme-dark`**). New components should look like they belong beside existing **template-derived** screens.
 4. **PeacePlot branding** — Replace template logos with **`assets/images/`** assets (**§2.4**); keep layout from **`design/`**.
 
@@ -39,19 +39,22 @@ The **`design/`** tree is the **Mobile Soziety–style** template (Bootstrap 5 +
 
 **Fonts:** **Nunito Sans** and **Poppins** (see `design/xhtml/index.html`). Plan to load the same (or closest Expo equivalent) for parity.
 
-**Behavioral note:** The template toggles dark via **`body.theme-dark`**. PeacePlot **defaults to dark**; tokens in **§2.2** apply.
+**Behavioral note:** The template toggles dark via **`body.theme-dark`**. PeacePlot **defaults to dark**; runtime **light** follows **`_variable.scss`**-style page/field colors (**§2.2**).
 
-### 2.2 Product direction: dark theme + blue accent
+### 2.2 Product direction: dark theme + blue accent (and light companion)
 
-The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). **PeacePlot uses dark surfaces + blue primary:**
+The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). **PeacePlot uses blue primary in both schemes:**
 
-- **Accent (use `color-blue` block in `_theme-color.scss`):** `--primary` `#2196f3`, `--primary-hover` `#0c7cd5`, `--primary-dark` `#064475`, `--primary-light-2` `#8ecdff`, blue `--gradient*` / `--rgba-primary-*`.
-- **Dark (`.theme-dark`):** surface **`#2c3f6d`**, header glass **`--bg-dark-light`** `rgba(44, 63, 109, 0.80)`, text **`rgba(255, 255, 255, 0.7)`**, headings **`#fff`**, borders **`rgba(255, 255, 255, 0.2)`**, muted **`rgba(255, 255, 255, 0.5)`**.
-- **Rule:** Implement **dark + blue** consistently; do not ship the template’s orange primary unless the owner revises this plan.
+- **Accent (use `color-blue` block in `_theme-color.scss`):** `--primary` `#2196f3`, `--primary-hover` `#0c7cd5`, `--primary-dark` `#064475`, `--primary-light-2` `#8ecdff`, blue `--gradient*` / `--rgba-primary-*` (unchanged in light vs dark).
+- **Dark (`.theme-dark` / feed-style tuning in app):** page / drawer / tab bar unified **`#243457`**, cards ~**`#2d405c`**, text **`#fff`** / body **`rgba(255,255,255,0.7)`**, borders **`rgba(255,255,255,0.2)`**, muted **`rgba(255,255,255,0.5)`** — implemented as **`PeacePlotPalettes.dark`** in **`src/constants/peaceplot-theme.ts`**.
+- **Light (`:root` / `_variable.scss`):** page **`#f5f7fb`**, cards/inputs **`#ffffff`**, headings/text **`#2f2f2f`**, borders **`#e6e6e6`**, muted **`#aeaed5`**, secondary surfaces **`#eef2f7`** / **`#e8eff3`** where needed — implemented as **`PeacePlotPalettes.light`** (same module).
+- **Rule:** Implement **blue** consistently; do not ship the template’s orange primary unless the owner revises this plan.
+
+**Runtime:** **`PeacePlotAppearanceProvider`** (`src/context/peaceplot-appearance.tsx`) persists **`peaceplot-appearance`** in **AsyncStorage** (default **dark**). **`usePeacePlotColors()`** returns the active palette; **`ThemeProvider`** + **Navigation** use **`getPeacePlotNavigationTheme(scheme)`**. The drawer **Dark Mode** `Switch` updates **`scheme`** app-wide.
 
 ### 2.3 Expo translation (plan-level)
 
-- **Single theme module** mirroring §2.2 (and naming aligned to template `--*` variables where useful)—applied **globally** so every route shares the same dark + blue defaults (**§2.0**).
+- **Single theme module** (`src/constants/peaceplot-theme.ts`) mirroring §2.2 **dark and light** palettes—applied **globally** via **`PeacePlotAppearanceProvider`** so every route shares the same tokens and **blue** accent (**§2.0**).
 - **Components** rebuilt from **`design/xhtml/`** with React Native + shared primitives; match **spacing, ~12px radius, header and bottom bar structure** for **all** tab roots and stacked screens.
 - **Gradients:** `expo-linear-gradient` (or equivalent) for blue gradients from `_theme-color.scss`.
 - **Icons:** One consistent approach (`@expo/vector-icons` and/or SVG); map roles (nav, header actions, status), not necessarily every template glyph.
@@ -61,14 +64,15 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 **Canonical paths (repo root–relative):**
 
-| Asset                     | Path                                        | Use                                                                                                                                                                                                               |
-| ------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Primary logo**          | **`assets/images/peaceplot.png`**           | **Header** (§4.1), **auth / welcome** branding, **drawer** header, **splash** companion if a wordmark is needed beside the loading mark, **share** previews where appropriate.                                    |
-| **Loading / splash mark** | **`assets/images/peaceplot-loading.png`**   | **App launch splash**, **full-screen loading** states (initial data fetch, auth bootstrap, heavy transitions), and **inline blocking loaders** where a centered brand treatment is preferred over a bare spinner. |
-| **Auth hero (sign-up)**   | **`assets/images/login/pic1.jpg`**          | **Sign-up** screen top photograph; mirrored from **`design/xhtml/assets/images/login/pic1.jpg`**.                                                                                                                 |
-| **Auth wave divider**     | **`assets/images/login/bg-shape-dark.png`** | Wavy edge between hero and form (dark theme), matching **`design/xhtml/`** `.welcome-area .join-area:after` using **`bg-shape-dark.png`**.                                                                        |
-| **Auth hero (sign-in)**   | **`assets/images/login/pic4.jpg`**          | **Sign-in** hero photo; mirrored from **`design/xhtml/assets/images/login/pic4.jpg`** (`login.html`).                                                                                                              |
-| **OAuth glyph assets**    | **`assets/images/login/facebook.png`**, **`assets/images/login/google.png`** | **Sign-in** “Or sign in with” row; mirrored from **`design/xhtml/assets/images/icons/`**.                                                                                        |
+| Asset                     | Path                                                                         | Use                                                                                                                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primary logo**          | **`assets/images/peaceplot.png`**                                            | **Header** (§4.1), **auth / welcome** branding, **drawer** header, **splash** companion if a wordmark is needed beside the loading mark, **share** previews where appropriate.                                    |
+| **Loading / splash mark** | **`assets/images/peaceplot-loading.png`**                                    | **App launch splash**, **full-screen loading** states (initial data fetch, auth bootstrap, heavy transitions), and **inline blocking loaders** where a centered brand treatment is preferred over a bare spinner. |
+| **Auth hero (sign-up)**   | **`assets/images/login/pic1.jpg`**                                           | **Sign-up** screen top photograph; mirrored from **`design/xhtml/assets/images/login/pic1.jpg`**.                                                                                                                 |
+| **Auth wave divider (dark)** | **`assets/images/login/bg-shape-dark.png`**                               | Wavy edge between hero and form (**dark** scheme), matching **`design/xhtml/`** `.theme-dark .welcome-area .join-area:after` / **`bg-shape-dark.png`**.                                                            |
+| **Auth wave divider (light)** | **`assets/images/login/bg-shape.png`**                                 | Same structural role for **light** scheme (mirrors **`design/xhtml/assets/images/bg-shape.png`** on non-dark welcome/join areas).                                                                                 |
+| **Auth hero (sign-in)**   | **`assets/images/login/pic4.jpg`**                                           | **Sign-in** hero photo; mirrored from **`design/xhtml/assets/images/login/pic4.jpg`** (`login.html`).                                                                                                             |
+| **OAuth glyph assets**    | **`assets/images/login/facebook.png`**, **`assets/images/login/google.png`** | **Sign-in** “Or sign in with” row; mirrored from **`design/xhtml/assets/images/icons/`**.                                                                                                                         |
 
 **Visual fit with §2.2:** The logo artwork is **blue-forward** with **gold / highlight** accents and **liquid / water** motifs (wordmark and circular mark with lotus). Implementation should place both assets on **dark** surfaces from **§2.2** so cyan–gold gradients read clearly; avoid light-gray page backgrounds behind **`peaceplot-loading.png`** unless the PNG is exported with **true transparency** for dark UI.
 
@@ -175,7 +179,7 @@ The Expo app implements the drawer in **`src/components/drawer-content.tsx`** wi
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Top (blue header)** | **User avatar** placeholder (rounded square, white border, person icon until Supabase profile photo). **Greeting** line: time-based (“Good Morning” / “Good Afternoon” / “Good Evening”). **Display name** placeholder: `Guest` until auth profile supplies a name.                                                                                                                 |
 | **MAIN MENU**         | Section title (all-caps). Rows: **icon + label + optional badge + chevron**. **Home** → returns to the **Home** tab; **Profile** / **Journal** → drawer routes; **Notification** (badge `1`) and **Chat** (badge `5`) → placeholder alerts until real screens exist; **Logout** → **`supabase.auth.signOut()`** when configured, then **`router.replace('/signin')`** (**§4.4.3**). |
-| **SETTINGS**          | Separator line. **Color Theme** → placeholder alert (future theme presets). **Dark Mode** → `Switch` (UI state; product default remains **dark + blue** per **§2.2**; full app-wide theme toggle can follow).                                                                                                                                                                       |
+| **SETTINGS**          | Separator line. **Dark Mode** → `Switch` bound to **`PeacePlotAppearanceProvider`** (**persisted**); toggles **light/dark** palettes (**§2.2**) and navigation/chrome; product **default** remains **dark + blue**.                                                                                                                                                                                                |
 | **Footer (pinned)**   | **`PeacePlot`** (bold) and **`App Version {version}`** via **`expo-constants`** (falls back to `1.0.0` if unset).                                                                                                                                                                                                                                                                   |
 
 The drawer width is ~**86%** of the screen (max **340px**). Rows use **Ionicons** for parity with vector icon usage elsewhere.
@@ -254,9 +258,9 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 - **Routes:** **`/signup`** (`src/app/signup.tsx`); **`/signin`** — full sign-in UI (**§4.4.3**).
 - **Template reference:** Layout follows **`design/xhtml/register.html`** and the **`welcome-area` / `join-area`** pattern (see `design/xhtml/assets/css/style.css` under `.welcome-area`), with **dark + blue** tokens (**§2.2**) instead of the template’s orange primary.
-- **Hero & wave:** Top **~40%** viewport uses **`assets/images/login/pic1.jpg`**; the form sheet overlaps the hero with **`assets/images/login/bg-shape-dark.png`** as the **liquid** transition strip (same asset role as **`.theme-dark .welcome-area .join-area:after`**).
+- **Hero & wave:** Top **~40%** viewport uses **`assets/images/login/pic1.jpg`**; the form sheet overlaps the hero with **`bg-shape-dark.png`** (dark) or **`bg-shape.png`** (light) as the **liquid** transition strip (same roles as template dark vs light welcome/join).
 - **Fields:** **Unique user ID** (maps to **`userid`** in **§4.4**), **email**, **password** with **show/hide** toggle; leading **icon boxes** use **blue** surfaces (`primaryDark` / primary family), not orange.
-- **Primary button:** Full-width **REGISTER** using **`PeacePlotColors.primary`** (`#2196f3`).
+- **Primary button:** Full-width **REGISTER** using **`primary`** + **`textOnPrimary`** (`#2196f3` fill, white label).
 - **Footer:** “Already have an account? **Sign in here**” links to **`/signin`**.
 - **Join-area layout (no `HERO_RATIO` change):** Reduced vertical padding/margins on the form block (title block, fields, **REGISTER**, footer) and slightly tighter input row height so the bottom section aligns like the template reference and fits one viewport on common phones; **`ScrollView`** kept for keyboard and very small screens.
 - **Backend:** When **`EXPO_PUBLIC_*`** Supabase env vars are set, **Register** calls **`supabase.auth.signUp`** with **`options.data.userid`**. Server-side **uniqueness** for `userid` remains to be enforced (Postgres unique constraint / profile table per **§6.1**).
@@ -265,8 +269,8 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 - **Route:** **`/`** — **`src/app/index.tsx`** (default screen on app open).
 - **Template reference:** **`design/xhtml/welcome.html`** — **`loader-screen`** (splash) then **`content-body`** → **`welcome-area`** (**`bg-image`** + **`join-area`** with swiper, pagination, **CREATE ACCOUNT**, **SIGN IN**, forgot link).
-- **Splash phase (~2.6s, capped):** Full-screen **`PeacePlotColors.background`**; centered **`assets/images/peaceplot-loading.png`** with a gentle **scale “breath”** (**`react-native-reanimated`**, aligned with **§2.4** motion bar); tagline **`YOUR PATH TO STRESS-FREE LIVING`** in **`primaryLight2`** (copy aligned with the loading artwork).
-- **Welcome phase:** Hero **`assets/images/login/pic1.jpg`** (height from **`HERO_RATIO`** only — unchanged by this layout pass), **`bg-shape-dark.png`** wave, **horizontal** carousel (**three** PeacePlot slides) + **dot** pagination, **CREATE ACCOUNT** → **`/signup`**, **SIGN IN** → **`/signin`**, **Forgot your account?** → placeholder alert (recovery flow TBD).
+- **Splash phase (~2.6s, capped):** Full-screen **palette `background`** (light or dark); centered **`assets/images/peaceplot-loading.png`** with a gentle **scale “breath”** (**`react-native-reanimated`**, aligned with **§2.4** motion bar); tagline **`YOUR PATH TO STRESS-FREE LIVING`** in **`primaryLight2`** (copy aligned with the loading artwork).
+- **Welcome phase:** Hero **`assets/images/login/pic1.jpg`** (height from **`HERO_RATIO`** only — unchanged by this layout pass), **scheme-aware** wave (**`bg-shape-dark.png`** / **`bg-shape.png`**), **horizontal** carousel (**three** PeacePlot slides) + **dot** pagination (inactive dots use **`dotInactive`**), **CREATE ACCOUNT** (**`textOnPrimary`**) → **`/signup`**, **SIGN IN** (secondary button tokens) → **`/signin`**, **Forgot your account?** → placeholder alert (recovery flow TBD).
 - **Join-area layout (no `HERO_RATIO` change):** Welcome body uses a **column `flex: 1`** under the hero (no outer vertical scroll); **`joinMain`** groups carousel + CTAs, **`joinInner`** uses **`justifyContent: 'space-between'`** so **Forgot** sits at the bottom; carousel viewport height is layout-tuned (**`CAROUSEL_H`**, not the hero). Tighter spacing on dots, buttons, and copy block so the screen fits **one viewport** on typical devices.
 - **Root layout:** **`src/app/_layout.tsx`** registers **`index`** first; the previous standalone **`AnimatedSplashOverlay`** solid-color intro was **removed** so launch branding lives on the welcome route with **`peaceplot-loading.png`** per **§2.4**.
 
@@ -274,7 +278,7 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 - **Route:** **`/signin`** — **`src/app/signin.tsx`**.
 - **Template reference:** **`design/xhtml/login.html`** — **`welcome-area`** hero + **`join-area`**: title + intro, **email** + **password** fields (password visibility toggle), **Forgot Password** (right-aligned row), **SIGN IN**, **Or sign in with** + **Facebook** / **Google** glyphs, footer **Don’t have an account? Signup here** → **`/signup`**.
-- **Styling:** Same patterns as **`/signup`** (**§2.2** tokens, **`bg-shape-dark.png`** wave, card inputs, primary **SIGN IN**)—not the template’s orange accent.
+- **Styling:** Same patterns as **`/signup`** (**§2.2** tokens, scheme-aware wave, **`surfaceInput`** fields, primary **SIGN IN** with **`textOnPrimary`**)—not the template’s orange accent.
 - **Assets:** Hero **`assets/images/login/pic4.jpg`**; social **`assets/images/login/facebook.png`**, **`google.png`** (from **`design/xhtml/assets/images/icons/`**).
 - **Behavior:** **`supabase.auth.signInWithPassword`** when configured; success → **`router.replace('/(drawer)/(tabs)')`**. **Forgot Password** and **OAuth** buttons are **placeholders** until recovery + provider flows per **§4.4** / **§6.1**.
 - **Layout:** Same as **Welcome** (**§4.4.2**): **`flex: 1`** page + **`formSheet`** with **`flex: 1`** / **`minHeight: 0`**, **`formInner`** **`justifyContent: 'space-between'`** (main block + footer row)—**no outer `ScrollView`** so the bottom sheet does not rubber-band vertically like a scroll page.
@@ -332,7 +336,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 - **Stack:** Expo (~55), React Native, **expo-router** for navigation.
 - **Platforms:** iOS, Android, Web (per Expo config).
-- **Structure:** **Default route** **`/`** — Welcome (**§4.4.2**); tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon — **§4.1.1** layout (user header, MAIN MENU incl. Home / Profile / Journal / Notification / Chat / Logout, SETTINGS, footer); stack routes **`signup`** (**§4.4.1**) / **`signin`** (**§4.4.3**); shared header component with **`assets/images/peaceplot.png`**; **launch splash** on Welcome uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**.
+- **Structure:** **Default route** **`/`** — Welcome (**§4.4.2**); tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon — **§4.1.1** layout (user header, MAIN MENU incl. Home / Profile / Journal / Notification / Chat / Logout, SETTINGS, footer); stack routes **`signup`** (**§4.4.1**) / **`signin`** (**§4.4.3**); shared header component with **`assets/images/peaceplot.png`**; **launch splash** on Welcome uses **`assets/images/peaceplot-loading.png`** with motion per **§2.4**; **appearance** — **`PeacePlotAppearanceProvider`** + **`usePeacePlotColors()`** for **light/dark** (**§2.2**).
 
 ### 6.1 Backend: Supabase (single platform)
 
@@ -398,4 +402,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-12_
+_Last updated: 2026-04-11_

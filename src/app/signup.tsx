@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Link, router, Stack } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,16 +20,119 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import { PeacePlotColors } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import {
+  usePeacePlotAppearance,
+  usePeacePlotColors,
+} from "@/context/peaceplot-appearance";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
 const ICON_BOX = 38;
 
+function createSignupStyles(c: PeacePlotPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.authJoinBackground },
+    scrollContent: { flexGrow: 1 },
+    heroWrap: { position: "relative" },
+    heroOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.12)",
+    },
+    heroSafe: { position: "absolute", left: 0, right: 0, top: 0 },
+    backBtn: { alignSelf: "flex-start", marginLeft: 8, padding: 4 },
+    formSheet: {
+      backgroundColor: c.authJoinBackground,
+      marginTop: -WAVE_HEIGHT + 8,
+      paddingBottom: 10,
+    },
+    wave: { position: "absolute", top: -WAVE_HEIGHT + 8, left: 0 },
+    formInner: { paddingHorizontal: 20, paddingTop: 32 },
+    titleBlock: { marginBottom: 10, alignItems: "center" },
+    title: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: c.text,
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    subtitle: {
+      fontSize: 14,
+      lineHeight: 18,
+      color: c.textBody,
+      textAlign: "center",
+      maxWidth: 340,
+    },
+    field: { marginBottom: 8 },
+    inputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      backgroundColor: c.surfaceInput,
+      paddingRight: 8,
+      minHeight: 46,
+    },
+    iconBox: {
+      width: ICON_BOX,
+      height: ICON_BOX,
+      margin: 4,
+      borderRadius: 8,
+      backgroundColor: c.authInputIconBg,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    input: {
+      flex: 1,
+      paddingVertical: 8,
+      paddingRight: 8,
+      fontSize: 16,
+      fontWeight: "600",
+      color: c.text,
+    },
+    eyeBtn: { padding: 8 },
+    registerBtn: {
+      marginTop: 4,
+      marginBottom: 10,
+      backgroundColor: c.primary,
+      borderRadius: 28,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    registerBtnPressed: { backgroundColor: c.primaryHover },
+    registerBtnDisabled: { opacity: 0.7 },
+    registerLabel: {
+      color: c.textOnPrimary,
+      fontSize: 16,
+      fontWeight: "800",
+      letterSpacing: 0.5,
+    },
+    footerRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      alignItems: "center",
+      marginTop: 4,
+    },
+    footerMuted: { color: c.textMuted, fontSize: 14 },
+    footerLink: {
+      color: c.primary,
+      fontSize: 14,
+      fontWeight: "600",
+      textDecorationLine: "underline",
+    },
+  });
+}
+
 export default function SignupScreen() {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const heroHeight = Math.round(height * HERO_RATIO);
+  const colors = usePeacePlotColors();
+  const { scheme } = usePeacePlotAppearance();
+  const styles = useMemo(() => createSignupStyles(colors), [colors]);
 
   const [userid, setUserid] = useState("");
   const [email, setEmail] = useState("");
@@ -38,54 +141,8 @@ export default function SignupScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
-    // const trimmedId = userid.trim();
-    // if (!trimmedId || trimmedId.length < 3) {
-    //   Alert.alert(
-    //     "Unique user ID",
-    //     "Please enter a user ID of at least 3 characters.",
-    //   );
-    //   return;
-    // }
-    // if (!/^[\w.-]+$/.test(trimmedId)) {
-    //   Alert.alert(
-    //     "Unique user ID",
-    //     "Use letters, numbers, dots, hyphens, and underscores only.",
-    //   );
-    //   return;
-    // }
-    // const em = email.trim();
-    // if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-    //   Alert.alert("Email", "Please enter a valid email address.");
-    //   return;
-    // }
-    // if (password.length < 6) {
-    //   Alert.alert("Password", "Password must be at least 6 characters.");
-    //   return;
-    // }
-
-    // if (!supabase) {
-    //   Alert.alert(
-    //     "PeacePlot",
-    //     "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to `.env` to create an account.",
-    //   );
-    //   return;
-    // }
-
     setSubmitting(true);
     try {
-      // const { error } = await supabase.auth.signUp({
-      //   email: em,
-      //   password,
-      //   options: {
-      //     data: {
-      //       userid: trimmedId,
-      //     },
-      //   },
-      // });
-      // if (error) {
-      //   Alert.alert("Sign up failed", error.message);
-      //   return;
-      // }
       Alert.alert(
         "PeacePlot",
         "If email confirmation is enabled, check your inbox. You can sign in when your account is ready.",
@@ -100,6 +157,11 @@ export default function SignupScreen() {
       setSubmitting(false);
     }
   }
+
+  const waveSource =
+    scheme === "dark"
+      ? require("../../assets/images/login/bg-shape-dark.png")
+      : require("../../assets/images/login/bg-shape.png");
 
   return (
     <>
@@ -138,7 +200,7 @@ export default function SignupScreen() {
                 <Ionicons
                   name="chevron-back"
                   size={28}
-                  color={PeacePlotColors.text}
+                  color={colors.text}
                 />
               </Pressable>
             </SafeAreaView>
@@ -146,7 +208,7 @@ export default function SignupScreen() {
 
           <View style={[styles.formSheet, { width }]}>
             <Image
-              source={require("../../assets/images/login/bg-shape-dark.png")}
+              source={waveSource}
               style={[styles.wave, { width, height: WAVE_HEIGHT }]}
               contentFit="fill"
             />
@@ -166,14 +228,14 @@ export default function SignupScreen() {
                     <Ionicons
                       name="person"
                       size={20}
-                      color={PeacePlotColors.text}
+                      color={colors.authInputIconFg}
                     />
                   </View>
                   <TextInput
                     value={userid}
                     onChangeText={setUserid}
                     placeholder="Unique user ID"
-                    placeholderTextColor={PeacePlotColors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     autoCapitalize="none"
                     autoCorrect={false}
                     style={styles.input}
@@ -187,14 +249,14 @@ export default function SignupScreen() {
                     <Ionicons
                       name="mail"
                       size={20}
-                      color={PeacePlotColors.text}
+                      color={colors.authInputIconFg}
                     />
                   </View>
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
                     placeholder="Email"
-                    placeholderTextColor={PeacePlotColors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -209,14 +271,14 @@ export default function SignupScreen() {
                     <Ionicons
                       name="lock-closed"
                       size={20}
-                      color={PeacePlotColors.text}
+                      color={colors.authInputIconFg}
                     />
                   </View>
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Password"
-                    placeholderTextColor={PeacePlotColors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     secureTextEntry={secure}
                     style={styles.input}
                   />
@@ -232,7 +294,7 @@ export default function SignupScreen() {
                     <Ionicons
                       name={secure ? "eye-off" : "eye"}
                       size={22}
-                      color={PeacePlotColors.primary}
+                      color={colors.primary}
                     />
                   </Pressable>
                 </View>
@@ -248,7 +310,7 @@ export default function SignupScreen() {
                 ]}
               >
                 {submitting ? (
-                  <ActivityIndicator color={PeacePlotColors.text} />
+                  <ActivityIndicator color={colors.textOnPrimary} />
                 ) : (
                   <Text style={styles.registerLabel}>REGISTER</Text>
                 )}
@@ -271,134 +333,3 @@ export default function SignupScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-    backgroundColor: PeacePlotColors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  heroWrap: {
-    position: "relative",
-  },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.12)",
-  },
-  heroSafe: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 0,
-  },
-  backBtn: {
-    alignSelf: "flex-start",
-    marginLeft: 8,
-    padding: 4,
-  },
-  formSheet: {
-    backgroundColor: PeacePlotColors.background,
-    marginTop: -WAVE_HEIGHT + 8,
-    paddingBottom: 10,
-  },
-  wave: {
-    position: "absolute",
-    top: -WAVE_HEIGHT + 8,
-    left: 0,
-  },
-  formInner: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
-  },
-  titleBlock: {
-    marginBottom: 10,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: PeacePlotColors.text,
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 18,
-    color: PeacePlotColors.textBody,
-    textAlign: "center",
-    maxWidth: 340,
-  },
-  field: {
-    marginBottom: 8,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: PeacePlotColors.border,
-    borderRadius: 12,
-    backgroundColor: PeacePlotColors.card,
-    paddingRight: 8,
-    minHeight: 46,
-  },
-  iconBox: {
-    width: ICON_BOX,
-    height: ICON_BOX,
-    margin: 4,
-    borderRadius: 8,
-    backgroundColor: PeacePlotColors.primaryDark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingRight: 8,
-    fontSize: 16,
-    fontWeight: "600",
-    color: PeacePlotColors.text,
-  },
-  eyeBtn: {
-    padding: 8,
-  },
-  registerBtn: {
-    marginTop: 4,
-    marginBottom: 10,
-    backgroundColor: PeacePlotColors.primary,
-    borderRadius: 28,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  registerBtnPressed: {
-    backgroundColor: PeacePlotColors.primaryHover,
-  },
-  registerBtnDisabled: {
-    opacity: 0.7,
-  },
-  registerLabel: {
-    color: PeacePlotColors.text,
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  footerRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  footerMuted: {
-    color: PeacePlotColors.textMuted,
-    fontSize: 14,
-  },
-  footerLink: {
-    color: PeacePlotColors.primary,
-    fontSize: 14,
-    fontWeight: "600",
-    textDecorationLine: "underline",
-  },
-});

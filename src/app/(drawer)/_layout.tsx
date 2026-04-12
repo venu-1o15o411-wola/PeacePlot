@@ -1,26 +1,33 @@
-import { Drawer } from 'expo-router/drawer';
-import React from 'react';
+import { Drawer } from "expo-router/drawer";
+import React, { useMemo } from "react";
 
-import { PeacePlotDrawerContent } from '@/components/drawer-content';
-import { PeacePlotColors } from '@/constants/peaceplot-theme';
+import { PeacePlotDrawerContent } from "@/components/drawer-content";
+import { usePeacePlotColors } from "@/context/peaceplot-appearance";
 
 export default function DrawerLayout() {
+  const colors = usePeacePlotColors();
+  const screenOptions = useMemo(
+    () => ({
+      headerShown: false as const,
+      drawerStyle: {
+        width: "86%" as const,
+        maxWidth: 340,
+        backgroundColor: colors.drawerBody,
+      },
+      drawerActiveTintColor: colors.primary,
+      drawerInactiveTintColor: colors.textMuted,
+    }),
+    [colors],
+  );
+
   return (
     <Drawer
       drawerContent={(props) => <PeacePlotDrawerContent {...props} />}
-      screenOptions={{
-        headerShown: false,
-        drawerStyle: {
-          width: '86%',
-          maxWidth: 340,
-          backgroundColor: PeacePlotColors.drawerBody,
-        },
-        drawerActiveTintColor: PeacePlotColors.primary,
-        drawerInactiveTintColor: PeacePlotColors.textMuted,
-      }}>
-      <Drawer.Screen name="(tabs)" options={{ title: 'PeacePlot' }} />
-      <Drawer.Screen name="profile" options={{ title: 'Profile' }} />
-      <Drawer.Screen name="journal" options={{ title: 'Journal' }} />
+      screenOptions={screenOptions}
+    >
+      <Drawer.Screen name="(tabs)" options={{ title: "PeacePlot" }} />
+      <Drawer.Screen name="profile" options={{ title: "Profile" }} />
+      <Drawer.Screen name="journal" options={{ title: "Journal" }} />
     </Drawer>
   );
 }

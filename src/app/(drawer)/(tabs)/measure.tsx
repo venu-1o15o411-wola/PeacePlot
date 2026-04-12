@@ -1,45 +1,40 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import React, { useMemo } from "react";
+import { ScrollView, StyleSheet, Text } from "react-native";
 
-import { MeasureGrid } from '@/components/measure-grid';
-import { PeacePlotColors } from '@/constants/peaceplot-theme';
+import { MeasureGrid } from "@/components/measure-grid";
+import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import { usePeacePlotColors } from "@/context/peaceplot-appearance";
 
-/** Same four modalities as Home — plan §4.2 center tab. */
+function createStyles(c: PeacePlotPalette) {
+  return StyleSheet.create({
+    scroll: { flex: 1, backgroundColor: c.background },
+    content: { padding: 16, paddingBottom: 100 },
+    title: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: c.text,
+      marginBottom: 8,
+    },
+    copy: { fontSize: 14, lineHeight: 20, color: c.textMuted, marginBottom: 16 },
+  });
+}
+
 export default function MeasureTabScreen() {
+  const colors = usePeacePlotColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}>
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.title}>Measure</Text>
       <Text style={styles.copy}>
-        Start a stress check-in. These match the Home grid: camera, fingerprint, voice-for-measurement, and
-        questions.
+        Start a stress check-in. These match the Home grid: camera, fingerprint,
+        voice-for-measurement, and questions.
       </Text>
       <MeasureGrid />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-    backgroundColor: PeacePlotColors.background,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: PeacePlotColors.text,
-    marginBottom: 8,
-  },
-  copy: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: PeacePlotColors.textMuted,
-    marginBottom: 16,
-  },
-});

@@ -1,25 +1,27 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Tabs } from "expo-router";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 
-import { AppHeader } from '@/components/app-header';
-import { PeaceTabBar } from '@/components/peace-tab-bar';
-import { PeacePlotColors } from '@/constants/peaceplot-theme';
+import { AppHeader } from "@/components/app-header";
+import { PeaceTabBar } from "@/components/peace-tab-bar";
+import { usePeacePlotColors } from "@/context/peaceplot-appearance";
 
 export default function TabsLayout() {
+  const colors = usePeacePlotColors();
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { backgroundColor: colors.background }]}>
       <AppHeader />
       <Tabs
         tabBar={(props) => <PeaceTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-        }}>
-        <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="discover" options={{ title: 'Discover' }} />
-        <Tabs.Screen name="measure" options={{ title: 'Measure' }} />
-        <Tabs.Screen name="forum" options={{ title: 'Forum' }} />
-        <Tabs.Screen name="sleep" options={{ title: 'Sleep' }} />
+        }}
+      >
+        <Tabs.Screen name="index" options={{ title: "Home" }} />
+        <Tabs.Screen name="discover" options={{ title: "Discover" }} />
+        <Tabs.Screen name="measure" options={{ title: "Measure" }} />
+        <Tabs.Screen name="forum" options={{ title: "Forum" }} />
+        <Tabs.Screen name="sleep" options={{ title: "Sleep" }} />
       </Tabs>
     </View>
   );
@@ -28,6 +30,5 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
-    backgroundColor: PeacePlotColors.background,
   },
 });

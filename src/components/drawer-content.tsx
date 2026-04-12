@@ -15,7 +15,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PeacePlotColors } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import {
+  usePeacePlotAppearance,
+  usePeacePlotColors,
+} from "@/context/peaceplot-appearance";
 import { supabase } from "@/lib/supabase";
 
 function getGreeting(): string {
@@ -27,13 +31,159 @@ function getGreeting(): string {
 
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
 
+/** Text on blue `drawerHeaderBlue` strip — template uses `#fff` */
+const ON_PRIMARY_HEADER = "#ffffff";
+
+function createDrawerStyles(c: PeacePlotPalette) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.drawerBody,
+    },
+    userHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingHorizontal: 18,
+      paddingVertical: 20,
+      backgroundColor: c.drawerHeaderBlue,
+    },
+    avatarWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: "rgba(255,255,255,0.85)",
+      backgroundColor: "rgba(255,255,255,0.2)",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    userTextCol: {
+      flex: 1,
+    },
+    greeting: {
+      fontSize: 13,
+      color: "rgba(255,255,255,0.9)",
+      fontWeight: "500",
+    },
+    userName: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: ON_PRIMARY_HEADER,
+      marginTop: 2,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 24,
+    },
+    sectionLabel: {
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 1.2,
+      color: c.textMuted,
+      paddingHorizontal: 20,
+      marginTop: 18,
+      marginBottom: 10,
+    },
+    menuRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
+    },
+    menuRowPressed: {
+      backgroundColor: c.pressHighlight,
+    },
+    menuLabel: {
+      flex: 1,
+      fontSize: 16,
+      color: c.textBody,
+      fontWeight: "500",
+    },
+    destructive: {
+      color: "#ff8a80",
+    },
+    rowRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    badge: {
+      minWidth: 22,
+      height: 22,
+      borderRadius: 11,
+      paddingHorizontal: 6,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    badgeRed: {
+      backgroundColor: "#e53935",
+    },
+    badgePurple: {
+      backgroundColor: "#9237e3",
+    },
+    badgeText: {
+      color: "#fff",
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    settingsDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: c.border,
+      marginHorizontal: 20,
+      marginTop: 16,
+      marginBottom: 4,
+    },
+    settingsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+    },
+    switch: {
+      marginLeft: "auto",
+    },
+    settingsHint: {
+      fontSize: 11,
+      color: c.textMuted,
+      paddingHorizontal: 20,
+      marginTop: 4,
+      lineHeight: 16,
+    },
+    footer: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      backgroundColor: c.drawerBody,
+    },
+    footerTitle: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: c.text,
+    },
+    footerVersion: {
+      fontSize: 13,
+      color: c.textBody,
+      marginTop: 4,
+    },
+  });
+}
+
 export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const greeting = useMemo(() => getGreeting(), []);
-  /** Placeholder until Supabase profile supplies `display_name`. */
   const [displayName] = useState("Guest");
-  const [darkModeOn, setDarkModeOn] = useState(true);
+  const colors = usePeacePlotColors();
+  const { scheme, setScheme } = usePeacePlotAppearance();
+  const styles = useMemo(() => createDrawerStyles(colors), [colors]);
+  const darkModeOn = scheme === "dark";
 
   const close = () => props.navigation.closeDrawer();
 
@@ -62,20 +212,11 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
     Alert.alert(label, "This destination will be connected in a later build.");
   };
 
-  const colorTheme = () => {
-    close();
-    Alert.alert(
-      "Color theme",
-      "Accent and theme presets will follow the plan (dark + blue default).",
-    );
-  };
-
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Blue user header — Soziety-style */}
       <View style={styles.userHeader}>
         <View style={styles.avatarWrap}>
-          <Ionicons name="person" size={36} color={PeacePlotColors.text} />
+          <Ionicons name="person" size={36} color={ON_PRIMARY_HEADER} />
         </View>
         <View style={styles.userTextCol}>
           <Text style={styles.greeting}>{greeting}</Text>
@@ -125,31 +266,18 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
         <View style={styles.settingsDivider} />
         <Text style={styles.sectionLabel}>SETTINGS</Text>
 
-        <MenuRow
-          icon="color-palette-outline"
-          label="Color Theme"
-          onPress={colorTheme}
-        />
         <View style={styles.settingsRow}>
-          <Ionicons
-            name="moon-outline"
-            size={22}
-            color={PeacePlotColors.text}
-          />
+          <Ionicons name="moon-outline" size={22} color={colors.text} />
           <Text style={styles.menuLabel}>Dark Mode</Text>
           <Switch
             value={darkModeOn}
-            onValueChange={setDarkModeOn}
-            trackColor={{ false: "#767577", true: "#9237e3" }}
-            thumbColor={darkModeOn ? "#f4f3f4" : "#f4f3f4"}
+            onValueChange={(v) => setScheme(v ? "dark" : "light")}
+            trackColor={{ false: "#767577", true: colors.primary }}
+            thumbColor="#f4f3f4"
             ios_backgroundColor="#3e3e3e"
             style={styles.switch}
           />
         </View>
-        <Text style={styles.settingsHint}>
-          Product default stays dark + blue (plan §2.2). Full theme switching
-          can sync app-wide later.
-        </Text>
       </ScrollView>
 
       <View
@@ -177,6 +305,9 @@ function MenuRow({
   badge?: number;
   badgeTone?: "red" | "purple";
 }) {
+  const colors = usePeacePlotColors();
+  const styles = useMemo(() => createDrawerStyles(colors), [colors]);
+
   return (
     <Pressable
       onPress={onPress}
@@ -190,7 +321,7 @@ function MenuRow({
       <Ionicons
         name={icon}
         size={22}
-        color={destructive ? "#ff8a80" : PeacePlotColors.text}
+        color={destructive ? "#ff8a80" : colors.text}
       />
       <Text style={[styles.menuLabel, destructive && styles.destructive]}>
         {label}
@@ -208,151 +339,8 @@ function MenuRow({
             </Text>
           </View>
         ) : null}
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={PeacePlotColors.textMuted}
-        />
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: PeacePlotColors.drawerBody,
-  },
-  userHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
-    backgroundColor: PeacePlotColors.drawerHeaderBlue,
-  },
-  avatarWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.85)",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  userTextCol: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.9)",
-    fontWeight: "500",
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: PeacePlotColors.text,
-    marginTop: 2,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    color: PeacePlotColors.textMuted,
-    paddingHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 10,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-  },
-  menuRowPressed: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: PeacePlotColors.textBody,
-    fontWeight: "500",
-  },
-  destructive: {
-    color: "#ff8a80",
-  },
-  rowRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  badge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeRed: {
-    backgroundColor: "#e53935",
-  },
-  badgePurple: {
-    backgroundColor: "#9237e3",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  settingsDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: PeacePlotColors.border,
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  settingsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  switch: {
-    marginLeft: "auto",
-  },
-  settingsHint: {
-    fontSize: 11,
-    color: PeacePlotColors.textMuted,
-    paddingHorizontal: 20,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  footer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: PeacePlotColors.border,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    backgroundColor: PeacePlotColors.drawerBody,
-  },
-  footerTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: PeacePlotColors.text,
-  },
-  footerVersion: {
-    fontSize: 13,
-    color: PeacePlotColors.textBody,
-    marginTop: 4,
-  },
-});
