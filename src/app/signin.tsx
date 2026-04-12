@@ -25,7 +25,6 @@ import {
 } from "react-native-safe-area-context";
 
 import { PeacePlotColors } from "@/constants/peaceplot-theme";
-import { supabase } from "@/lib/supabase";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
@@ -42,34 +41,34 @@ export default function SigninScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   async function onSignIn() {
-    const em = email.trim();
-    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-      Alert.alert("Email", "Please enter a valid email address.");
-      return;
-    }
-    if (password.length < 1) {
-      Alert.alert("Password", "Please enter your password.");
-      return;
-    }
+    // const em = email.trim();
+    // if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+    //   Alert.alert("Email", "Please enter a valid email address.");
+    //   return;
+    // }
+    // if (password.length < 1) {
+    //   Alert.alert("Password", "Please enter your password.");
+    //   return;
+    // }
 
-    if (!supabase) {
-      Alert.alert(
-        "PeacePlot",
-        "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to `.env`.",
-      );
-      return;
-    }
+    // if (!supabase) {
+    //   Alert.alert(
+    //     "PeacePlot",
+    //     "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to `.env`.",
+    //   );
+    //   return;
+    // }
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: em,
-        password,
-      });
-      if (error) {
-        Alert.alert("Sign in failed", error.message);
-        return;
-      }
+      // const { error } = await supabase.auth.signInWithPassword({
+      //   email: em,
+      //   password,
+      // });
+      // if (error) {
+      //   Alert.alert("Sign in failed", error.message);
+      //   return;
+      // }
       router.replace("/(drawer)/(tabs)" as Href);
     } catch (e) {
       Alert.alert(
@@ -137,122 +136,128 @@ export default function SigninScreen() {
 
             <View style={styles.formInner}>
               <View style={styles.formMain}>
-              <View style={styles.titleBlock}>
-                <Text style={styles.title}>Sign in</Text>
-                <Text style={styles.subtitle}>
-                  Welcome back—sign in to continue your path to calmer days with
-                  PeacePlot.
-                </Text>
-              </View>
-
-              <View style={styles.field}>
-                <View style={styles.inputRow}>
-                  <View style={styles.iconBox}>
-                    <Ionicons name="mail" size={20} color={PeacePlotColors.text} />
-                  </View>
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="Email"
-                    placeholderTextColor={PeacePlotColors.textMuted}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    style={styles.input}
-                  />
+                <View style={styles.titleBlock}>
+                  <Text style={styles.title}>Sign in</Text>
+                  <Text style={styles.subtitle}>
+                    Welcome back—sign in to continue your path to calmer days
+                    with PeacePlot.
+                  </Text>
                 </View>
-              </View>
 
-              <View style={styles.field}>
-                <View style={styles.inputRow}>
-                  <View style={styles.iconBox}>
-                    <Ionicons
-                      name="lock-closed"
-                      size={20}
-                      color={PeacePlotColors.text}
+                <View style={styles.field}>
+                  <View style={styles.inputRow}>
+                    <View style={styles.iconBox}>
+                      <Ionicons
+                        name="mail"
+                        size={20}
+                        color={PeacePlotColors.text}
+                      />
+                    </View>
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="Email"
+                      placeholderTextColor={PeacePlotColors.textMuted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.input}
                     />
                   </View>
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Password"
-                    placeholderTextColor={PeacePlotColors.textMuted}
-                    secureTextEntry={secure}
-                    style={styles.input}
-                  />
-                  <Pressable
-                    onPress={() => setSecure((s) => !s)}
-                    style={styles.eyeBtn}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={secure ? "Show password" : "Hide password"}
-                  >
-                    <Ionicons
-                      name={secure ? "eye-off" : "eye"}
-                      size={22}
-                      color={PeacePlotColors.primary}
-                    />
-                  </Pressable>
                 </View>
-              </View>
 
-              <Pressable
-                onPress={() =>
-                  Alert.alert(
-                    "Forgot password",
-                    "Recovery flow will match plan §4.4 (email reset via Supabase).",
-                  )
-                }
-                style={styles.forgotRow}
-              >
-                <Text style={styles.forgotLink}>Forgot Password</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={onSignIn}
-                disabled={submitting}
-                style={({ pressed }) => [
-                  styles.signInBtn,
-                  pressed && styles.signInBtnPressed,
-                  submitting && styles.signInBtnDisabled,
-                ]}
-              >
-                {submitting ? (
-                  <ActivityIndicator color={PeacePlotColors.text} />
-                ) : (
-                  <Text style={styles.signInLabel}>SIGN IN</Text>
-                )}
-              </Pressable>
-
-              <View style={styles.socialBox}>
-                <Text style={styles.socialHint}>Or sign in with</Text>
-                <View style={styles.socialRow}>
-                  <Pressable
-                    onPress={() => onSocialPlaceholder("Facebook")}
-                    style={styles.socialHit}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sign in with Facebook"
-                  >
-                    <Image
-                      source={require("../../assets/images/login/facebook.png")}
-                      style={styles.socialIcon}
-                      contentFit="contain"
+                <View style={styles.field}>
+                  <View style={styles.inputRow}>
+                    <View style={styles.iconBox}>
+                      <Ionicons
+                        name="lock-closed"
+                        size={20}
+                        color={PeacePlotColors.text}
+                      />
+                    </View>
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Password"
+                      placeholderTextColor={PeacePlotColors.textMuted}
+                      secureTextEntry={secure}
+                      style={styles.input}
                     />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => onSocialPlaceholder("Google")}
-                    style={styles.socialHit}
-                    accessibilityRole="button"
-                    accessibilityLabel="Sign in with Google"
-                  >
-                    <Image
-                      source={require("../../assets/images/login/google.png")}
-                      style={styles.socialIcon}
-                      contentFit="contain"
-                    />
-                  </Pressable>
+                    <Pressable
+                      onPress={() => setSecure((s) => !s)}
+                      style={styles.eyeBtn}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        secure ? "Show password" : "Hide password"
+                      }
+                    >
+                      <Ionicons
+                        name={secure ? "eye-off" : "eye"}
+                        size={22}
+                        color={PeacePlotColors.primary}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
-              </View>
+
+                <Pressable
+                  onPress={() =>
+                    Alert.alert(
+                      "Forgot password",
+                      "Recovery flow will match plan §4.4 (email reset via Supabase).",
+                    )
+                  }
+                  style={styles.forgotRow}
+                >
+                  <Text style={styles.forgotLink}>Forgot Password</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={onSignIn}
+                  disabled={submitting}
+                  style={({ pressed }) => [
+                    styles.signInBtn,
+                    pressed && styles.signInBtnPressed,
+                    submitting && styles.signInBtnDisabled,
+                  ]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color={PeacePlotColors.text} />
+                  ) : (
+                    <Text style={styles.signInLabel}>SIGN IN</Text>
+                  )}
+                </Pressable>
+
+                <View style={styles.socialBox}>
+                  <Text style={styles.socialHint}>Or sign in with</Text>
+                  <View style={styles.socialRow}>
+                    <Pressable
+                      onPress={() => onSocialPlaceholder("Facebook")}
+                      style={styles.socialHit}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sign in with Facebook"
+                    >
+                      <Image
+                        source={require("../../assets/images/login/facebook.png")}
+                        style={styles.socialIcon}
+                        contentFit="contain"
+                      />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onSocialPlaceholder("Google")}
+                      style={styles.socialHit}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sign in with Google"
+                    >
+                      <Image
+                        source={require("../../assets/images/login/google.png")}
+                        style={styles.socialIcon}
+                        contentFit="contain"
+                      />
+                    </Pressable>
+                  </View>
+                </View>
               </View>
 
               <View style={styles.footerRow}>

@@ -21,7 +21,6 @@ import {
 } from "react-native-safe-area-context";
 
 import { PeacePlotColors } from "@/constants/peaceplot-theme";
-import { supabase } from "@/lib/supabase";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
@@ -39,54 +38,54 @@ export default function SignupScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
-    const trimmedId = userid.trim();
-    if (!trimmedId || trimmedId.length < 3) {
-      Alert.alert(
-        "Unique user ID",
-        "Please enter a user ID of at least 3 characters.",
-      );
-      return;
-    }
-    if (!/^[\w.-]+$/.test(trimmedId)) {
-      Alert.alert(
-        "Unique user ID",
-        "Use letters, numbers, dots, hyphens, and underscores only.",
-      );
-      return;
-    }
-    const em = email.trim();
-    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-      Alert.alert("Email", "Please enter a valid email address.");
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert("Password", "Password must be at least 6 characters.");
-      return;
-    }
+    // const trimmedId = userid.trim();
+    // if (!trimmedId || trimmedId.length < 3) {
+    //   Alert.alert(
+    //     "Unique user ID",
+    //     "Please enter a user ID of at least 3 characters.",
+    //   );
+    //   return;
+    // }
+    // if (!/^[\w.-]+$/.test(trimmedId)) {
+    //   Alert.alert(
+    //     "Unique user ID",
+    //     "Use letters, numbers, dots, hyphens, and underscores only.",
+    //   );
+    //   return;
+    // }
+    // const em = email.trim();
+    // if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+    //   Alert.alert("Email", "Please enter a valid email address.");
+    //   return;
+    // }
+    // if (password.length < 6) {
+    //   Alert.alert("Password", "Password must be at least 6 characters.");
+    //   return;
+    // }
 
-    if (!supabase) {
-      Alert.alert(
-        "PeacePlot",
-        "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to `.env` to create an account.",
-      );
-      return;
-    }
+    // if (!supabase) {
+    //   Alert.alert(
+    //     "PeacePlot",
+    //     "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to `.env` to create an account.",
+    //   );
+    //   return;
+    // }
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email: em,
-        password,
-        options: {
-          data: {
-            userid: trimmedId,
-          },
-        },
-      });
-      if (error) {
-        Alert.alert("Sign up failed", error.message);
-        return;
-      }
+      // const { error } = await supabase.auth.signUp({
+      //   email: em,
+      //   password,
+      //   options: {
+      //     data: {
+      //       userid: trimmedId,
+      //     },
+      //   },
+      // });
+      // if (error) {
+      //   Alert.alert("Sign up failed", error.message);
+      //   return;
+      // }
       Alert.alert(
         "PeacePlot",
         "If email confirmation is enabled, check your inbox. You can sign in when your account is ready.",
