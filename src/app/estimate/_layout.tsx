@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import React, { useMemo } from "react";
 
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function EstimateStackLayout() {
   const colors = usePeacePlotColors();

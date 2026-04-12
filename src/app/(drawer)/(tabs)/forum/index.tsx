@@ -1,8 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import { ForumHub } from "@/components/forum-hub";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { ForumHub } from "@/components/forum/forum-hub";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function ForumIndexScreen() {
   const colors = usePeacePlotColors();

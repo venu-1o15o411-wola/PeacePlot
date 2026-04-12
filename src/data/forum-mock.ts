@@ -1,6 +1,4 @@
-/**
- * Mock Forum data — replace with Supabase (articles, rooms, messages, moderation) per plan §5.3, §6.1.
- */
+
 
 export type ForumChipId = "all" | "articles" | "rooms" | "chatbot";
 
@@ -89,7 +87,6 @@ export const FORUM_ROOMS: ForumRoom[] = [
   },
 ];
 
-/** Sample threaded comments for article detail (tree structure per plan §4.3). */
 export const FORUM_ARTICLE_COMMENTS: Record<string, ForumComment[]> = {
   a1: [
     {

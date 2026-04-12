@@ -4,8 +4,8 @@ import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 const TILES: {
   key: string;

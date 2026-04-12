@@ -1,17 +1,11 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import { getDiscoverItem } from "@/data/discover-mock";
 
 function createStyles(c: PeacePlotPalette) {
@@ -111,13 +105,18 @@ export default function DiscoverItemScreen() {
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const item = useMemo(() => (id ? getDiscoverItem(String(id)) : undefined), [id]);
+  const item = useMemo(
+    () => (id ? getDiscoverItem(String(id)) : undefined),
+    [id],
+  );
 
   if (!item) {
     return (
       <>
         <Stack.Screen options={{ title: "" }} />
-        <View style={[styles.root, styles.notFound, { paddingTop: insets.top }]}>
+        <View
+          style={[styles.root, styles.notFound, { paddingTop: insets.top }]}
+        >
           <Pressable
             onPress={() => router.back()}
             style={styles.backRow}
@@ -181,8 +180,8 @@ export default function DiscoverItemScreen() {
 
           <Text style={styles.disclaimer}>
             Wellness information only — not a substitute for professional care.
-            AI and location features follow the permissions and disclosures in the
-            product plan.
+            AI and location features follow the permissions and disclosures in
+            the product plan.
           </Text>
         </ScrollView>
       </View>

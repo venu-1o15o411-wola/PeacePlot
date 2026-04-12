@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import { getForumRoom } from "@/data/forum-mock";
 
 function createStyles(c: PeacePlotPalette) {
@@ -81,10 +81,7 @@ export default function ForumRoomScreen() {
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const room = useMemo(
-    () => (id ? getForumRoom(String(id)) : undefined),
-    [id],
-  );
+  const room = useMemo(() => (id ? getForumRoom(String(id)) : undefined), [id]);
 
   const onSearchUsers = () => {
     Alert.alert(
@@ -141,8 +138,8 @@ export default function ForumRoomScreen() {
           <View style={styles.card}>
             <Text style={styles.cardBody}>
               Realtime messages, presence, and moderation queues will use
-              Supabase Realtime + Postgres. This screen is a calm placeholder
-              so navigation and IA match the plan before backend work.
+              Supabase Realtime + Postgres. This screen is a calm placeholder so
+              navigation and IA match the plan before backend work.
             </Text>
           </View>
 
@@ -152,7 +149,11 @@ export default function ForumRoomScreen() {
             accessibilityRole="button"
             accessibilityLabel="Find users — planned feature"
           >
-            <Ionicons name="person-add-outline" size={22} color={colors.textOnPrimary} />
+            <Ionicons
+              name="person-add-outline"
+              size={22}
+              color={colors.textOnPrimary}
+            />
             <Text style={styles.searchLabel}>Find people (planned)</Text>
           </Pressable>
 

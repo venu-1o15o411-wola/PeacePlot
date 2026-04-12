@@ -1,12 +1,3 @@
-/**
- * PeacePlot themes — mapped from `design/xhtml/assets/scss/`:
- *
- * - **Dark:** `.theme-dark` (`_theme-view.scss`) + unified shell **`#243457`** (page, drawer, tab bar);
- *   accent from **`color-blue`** (`_theme-color.scss`), not template orange.
- * - **Light:** `:root` / `_variable.scss` (`$body-bg`, `$body-color`, `$border`, `$headings-color`,
- *   `$text-muted`, `$grey`) + **`color-blue`** primaries; welcome **`join-area`** uses `--bg-white` **#fff**
- *   (`_welcome.scss`).
- */
 import type { Theme } from "@react-navigation/native";
 import { DarkTheme, DefaultTheme } from "@react-navigation/native";
 
@@ -15,7 +6,6 @@ export type PeacePlotScheme = "light" | "dark";
 export type PeacePlotPalette = {
   background: string;
   card: string;
-  /** Opaque `card` for React Navigation `Theme.colors.card` */
   cardNavSolid: string;
   headerGlass: string;
   primary: string;
@@ -30,16 +20,9 @@ export type PeacePlotPalette = {
   measureRing: string;
   drawerBody: string;
   drawerHeaderBlue: string;
-  /** Auth / form field fill — dark: flat on page; light: `#fff` */
   surfaceInput: string;
-  /** Icon chips on cards — dark: deep navy (blue family); light `$grey`-family */
   surfaceDeep: string;
-  /**
-   * Welcome/auth form column — template `welcome` join uses white on light (`$body-bg`);
-   * use this for wave-adjacent sheet so it matches `bg-shape.png` (not grey page bg).
-   */
   authJoinBackground: string;
-  /** Leading icon well on auth inputs (dark: solid `primaryDark` + light icons; light: soft primary tint + blue icons). */
   authInputIconBg: string;
   authInputIconFg: string;
   dotInactive: string;
@@ -49,7 +32,6 @@ export type PeacePlotPalette = {
   tabBarBackground: string;
 };
 
-/** Single dark canvas — matches drawer (`drawerBody`) and tab bar for no seam. */
 const DARK_BG = "#243457";
 const DARK_BG_RGB = { r: 36, g: 52, b: 87 } as const;
 
@@ -72,7 +54,6 @@ export const PeacePlotPalettes: Record<PeacePlotScheme, PeacePlotPalette> = {
     drawerBody: DARK_BG,
     drawerHeaderBlue: "#2196f3",
     surfaceInput: DARK_BG,
-    /** Slightly lifted from page for icon wells — still blue/navy family */
     surfaceDeep: "#2d4a6b",
     authJoinBackground: DARK_BG,
     authInputIconBg: "#064475",
@@ -94,7 +75,6 @@ export const PeacePlotPalettes: Record<PeacePlotScheme, PeacePlotPalette> = {
     primaryLight2: "#8ecdff",
     text: "#2f2f2f",
     textBody: "rgba(0, 0, 0, 0.65)",
-    /** Neutral grey for placeholders / hints — avoids lavender-only mismatch next to white auth (`$text-muted` is `#AEAED5` in template but reads off on `#fff`). */
     textMuted: "#64748b",
     textOnPrimary: "#ffffff",
     border: "#e6e6e6",
@@ -130,6 +110,3 @@ export function getPeacePlotNavigationTheme(scheme: PeacePlotScheme): Theme {
     },
   };
 }
-
-/** @deprecated Prefer `usePeacePlotColors()` for runtime light/dark. */
-export const PeacePlotColors = PeacePlotPalettes.dark;

@@ -15,11 +15,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
-} from "@/context/peaceplot-appearance";
+} from "@/providers/peaceplot-appearance";
 import { supabase } from "@/lib/supabase";
 
 function getGreeting(): string {
@@ -31,7 +31,6 @@ function getGreeting(): string {
 
 const APP_VERSION = Constants.expoConfig?.version ?? "1.0.0";
 
-/** Text on blue `drawerHeaderBlue` strip — template uses `#fff` */
 const ON_PRIMARY_HEADER = "#ffffff";
 
 function createDrawerStyles(c: PeacePlotPalette) {
@@ -202,7 +201,7 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
     try {
       await supabase?.auth.signOut();
     } catch {
-      /* still navigate to sign-in */
+      
     }
     router.replace("/signin" as Href);
   };

@@ -6,8 +6,8 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 type AppHeaderProps = {
   onChatPress?: () => void;
@@ -55,7 +55,7 @@ export function AppHeader({ onChatPress, onNotifyPress }: AppHeaderProps) {
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 8 }]}>
       <Image
-        source={require("@/assets/images/peaceplot.png")}
+        source={require("@/assets/images/brand/peaceplot.png")}
         style={styles.logo}
         contentFit="contain"
         accessibilityLabel="PeacePlot"

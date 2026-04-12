@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   DISCOVER_CHIPS,
   DISCOVER_ITEMS,
@@ -346,7 +346,7 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
     });
   }, [query, chip]);
 
-  /** Avoid duplicate rows under Featured when browsing without search. */
+  
   const listData = useMemo(() => {
     const q = query.trim();
     if (q) return filtered;

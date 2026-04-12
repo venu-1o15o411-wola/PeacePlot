@@ -4,8 +4,8 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
@@ -46,8 +46,7 @@ export default function JournalScreen() {
       <View style={styles.body}>
         <Text style={styles.copy}>
           Reflective journaling and optional links to stress check-ins will be
-          stored per user (Supabase) per the plan. Not a bottom-tab
-          destination.
+          stored per user (Supabase) per the plan. Not a bottom-tab destination.
         </Text>
       </View>
     </SafeAreaView>

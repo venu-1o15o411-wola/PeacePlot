@@ -1,10 +1,10 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-import { DoctorQuotesSlider } from "@/components/doctor-quotes-slider";
-import { MeasureGrid } from "@/components/measure-grid";
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { DoctorQuotesSlider } from "@/components/home/doctor-quotes-slider";
+import { MeasureGrid } from "@/components/home/measure-grid";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 function createHomeStyles(c: PeacePlotPalette) {
   return StyleSheet.create({

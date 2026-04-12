@@ -12,7 +12,7 @@ import {
   PeacePlotPalettes,
   type PeacePlotPalette,
   type PeacePlotScheme,
-} from "@/constants/peaceplot-theme";
+} from "@/theme/peaceplot-theme";
 
 const STORAGE_KEY = "peaceplot-appearance";
 
@@ -38,9 +38,7 @@ export function PeacePlotAppearanceProvider({
         if (!cancelled && (raw === "light" || raw === "dark")) {
           setSchemeState(raw);
         }
-      } catch {
-        /* keep default dark */
-      }
+      } catch {}
     })();
     return () => {
       cancelled = true;

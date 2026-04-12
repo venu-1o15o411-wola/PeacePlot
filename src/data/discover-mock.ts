@@ -1,7 +1,4 @@
-/**
- * Mock Discover library — replace with Supabase / CMS per plan §4.3, §6.1.
- * Categories align with plan: books, media, music, activities, places, AI advice.
- */
+
 
 export type DiscoverChipId =
   | "all"

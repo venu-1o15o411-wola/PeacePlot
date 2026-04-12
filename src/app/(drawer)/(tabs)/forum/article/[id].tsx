@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import {
   getArticleComments,
   getForumArticle,
@@ -174,7 +174,7 @@ export default function ForumArticleScreen() {
   };
 
   const onCommentLike = () => {
-    /* UI-only until Supabase — avoids alert spam on each nested reply */
+    
   };
 
   if (!article) {
@@ -277,7 +277,10 @@ export default function ForumArticleScreen() {
           )}
 
           <Text
-            style={[styles.body, { fontSize: 12, marginTop: 16, opacity: 0.85 }]}
+            style={[
+              styles.body,
+              { fontSize: 12, marginTop: 16, opacity: 0.85 },
+            ]}
           >
             Wellness information only. For emergencies, contact local services.
           </Text>

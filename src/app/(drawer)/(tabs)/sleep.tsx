@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({

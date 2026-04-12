@@ -8,18 +8,15 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   getPeacePlotNavigationTheme,
   PeacePlotPalettes,
-} from "@/constants/peaceplot-theme";
+} from "@/theme/peaceplot-theme";
 import {
   PeacePlotAppearanceProvider,
   usePeacePlotAppearance,
-} from "@/context/peaceplot-appearance";
+} from "@/providers/peaceplot-appearance";
 
 function NavigationShell({ children }: { children: React.ReactNode }) {
   const { scheme } = usePeacePlotAppearance();
-  const navTheme = useMemo(
-    () => getPeacePlotNavigationTheme(scheme),
-    [scheme],
-  );
+  const navTheme = useMemo(() => getPeacePlotNavigationTheme(scheme), [scheme]);
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(

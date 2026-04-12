@@ -2,9 +2,9 @@ import { Tabs } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import { AppHeader } from "@/components/app-header";
-import { PeaceTabBar } from "@/components/peace-tab-bar";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { AppHeader } from "@/components/navigation/app-header";
+import { PeaceTabBar } from "@/components/navigation/peace-tab-bar";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function TabsLayout() {
   const colors = usePeacePlotColors();

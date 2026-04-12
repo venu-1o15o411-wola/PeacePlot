@@ -1,6 +1,4 @@
-/**
- * Sign-in — `design/xhtml/login.html`. Wave: `bg-shape-dark.png` (dark) / `bg-shape.png` (light).
- */
+
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import type { Href } from "expo-router";
@@ -23,11 +21,11 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
-} from "@/context/peaceplot-appearance";
+} from "@/providers/peaceplot-appearance";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
@@ -189,8 +187,8 @@ export default function SigninScreen() {
 
   const waveSource =
     scheme === "dark"
-      ? require("../../assets/images/login/bg-shape-dark.png")
-      : require("../../assets/images/login/bg-shape.png");
+      ? require("../../assets/images/auth/bg-shape-dark.png")
+      : require("../../assets/images/auth/bg-shape.png");
 
   return (
     <>
@@ -202,7 +200,7 @@ export default function SigninScreen() {
         <View style={styles.page}>
           <View style={[styles.heroWrap, { height: heroHeight, width }]}>
             <Image
-              source={require("../../assets/images/login/pic4.jpg")}
+              source={require("../../assets/images/auth/pic4.jpg")}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
             />
@@ -218,11 +216,7 @@ export default function SigninScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
               >
-                <Ionicons
-                  name="chevron-back"
-                  size={28}
-                  color={colors.text}
-                />
+                <Ionicons name="chevron-back" size={28} color={colors.text} />
               </Pressable>
             </SafeAreaView>
           </View>
@@ -344,7 +338,7 @@ export default function SigninScreen() {
                       accessibilityLabel="Sign in with Facebook"
                     >
                       <Image
-                        source={require("../../assets/images/login/facebook.png")}
+                        source={require("../../assets/images/auth/facebook.png")}
                         style={styles.socialIcon}
                         contentFit="contain"
                       />
@@ -356,7 +350,7 @@ export default function SigninScreen() {
                       accessibilityLabel="Sign in with Google"
                     >
                       <Image
-                        source={require("../../assets/images/login/google.png")}
+                        source={require("../../assets/images/auth/google.png")}
                         style={styles.socialIcon}
                         contentFit="contain"
                       />

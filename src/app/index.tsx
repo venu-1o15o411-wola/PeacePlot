@@ -1,7 +1,4 @@
-/**
- * Welcome & launch — structure from `design/xhtml/welcome.html`:
- * splash (loader-screen) → welcome-area (hero + join-area: swiper, CTAs).
- */
+
 import { Image } from "expo-image";
 import type { Href } from "expo-router";
 import { router, Stack } from "expo-router";
@@ -32,11 +29,11 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
-} from "@/context/peaceplot-appearance";
+} from "@/providers/peaceplot-appearance";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
@@ -59,7 +56,6 @@ const SLIDES: { title: string; body: string }[] = [
   },
 ];
 
-/** Carousel viewport height — layout-only (not hero ratio); kept compact for one-screen fit. */
 const CAROUSEL_H = 172;
 
 function createWelcomeStyles(c: PeacePlotPalette) {
@@ -248,7 +244,7 @@ function SplashContent() {
     <SafeAreaView style={styles.splashRoot} edges={["top", "bottom"]}>
       <Animated.View style={[styles.splashImageWrap, imageAnim]}>
         <Image
-          source={require("../../assets/images/peaceplot-loading.png")}
+          source={require("../../assets/images/brand/peaceplot-loading.png")}
           style={styles.splashImage}
           contentFit="contain"
         />
@@ -285,8 +281,8 @@ export default function WelcomeScreen() {
 
   const waveSource =
     scheme === "dark"
-      ? require("../../assets/images/login/bg-shape-dark.png")
-      : require("../../assets/images/login/bg-shape.png");
+      ? require("../../assets/images/auth/bg-shape-dark.png")
+      : require("../../assets/images/auth/bg-shape.png");
 
   if (phase === "splash") {
     return (
@@ -303,7 +299,7 @@ export default function WelcomeScreen() {
       <View style={styles.page}>
         <View style={[styles.heroWrap, { height: heroHeight, width }]}>
           <Image
-            source={require("../../assets/images/login/pic1.jpg")}
+            source={require("../../assets/images/auth/pic1.jpg")}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
           />

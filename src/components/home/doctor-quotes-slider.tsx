@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 const { width: WINDOW_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(WINDOW_WIDTH - 48, 340);

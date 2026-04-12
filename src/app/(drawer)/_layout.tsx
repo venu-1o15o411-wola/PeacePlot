@@ -1,8 +1,8 @@
 import { Drawer } from "expo-router/drawer";
 import React, { useMemo } from "react";
 
-import { PeacePlotDrawerContent } from "@/components/drawer-content";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { PeacePlotDrawerContent } from "@/components/navigation/drawer-content";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function DrawerLayout() {
   const colors = usePeacePlotColors();

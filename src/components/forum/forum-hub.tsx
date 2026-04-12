@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   FORUM_ARTICLES,
   FORUM_ROOMS,

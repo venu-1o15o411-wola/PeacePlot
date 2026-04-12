@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-import { MeasureGrid } from "@/components/measure-grid";
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { MeasureGrid } from "@/components/home/measure-grid";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
@@ -15,7 +15,12 @@ function createStyles(c: PeacePlotPalette) {
       color: c.text,
       marginBottom: 8,
     },
-    copy: { fontSize: 14, lineHeight: 20, color: c.textMuted, marginBottom: 16 },
+    copy: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: c.textMuted,
+      marginBottom: 16,
+    },
   });
 }
 

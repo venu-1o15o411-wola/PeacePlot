@@ -1,15 +1,13 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 
-import { DiscoverLibrary } from "@/components/discover-library";
-import { usePeacePlotColors } from "@/context/peaceplot-appearance";
+import { DiscoverLibrary } from "@/components/discover/discover-library";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function DiscoverIndexScreen() {
   const colors = usePeacePlotColors();
   return (
-    <View
-      style={[styles.root, { backgroundColor: colors.background }]}
-    >
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <DiscoverLibrary colors={colors} />
     </View>
   );

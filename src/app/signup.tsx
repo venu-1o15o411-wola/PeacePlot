@@ -20,11 +20,11 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/constants/peaceplot-theme";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
-} from "@/context/peaceplot-appearance";
+} from "@/providers/peaceplot-appearance";
 
 const HERO_RATIO = 0.6;
 const WAVE_HEIGHT = 100;
@@ -160,8 +160,8 @@ export default function SignupScreen() {
 
   const waveSource =
     scheme === "dark"
-      ? require("../../assets/images/login/bg-shape-dark.png")
-      : require("../../assets/images/login/bg-shape.png");
+      ? require("../../assets/images/auth/bg-shape-dark.png")
+      : require("../../assets/images/auth/bg-shape.png");
 
   return (
     <>
@@ -181,7 +181,7 @@ export default function SignupScreen() {
         >
           <View style={[styles.heroWrap, { height: heroHeight, width }]}>
             <Image
-              source={require("../../assets/images/login/pic3.jpg")}
+              source={require("../../assets/images/auth/pic3.jpg")}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
             />
@@ -197,11 +197,7 @@ export default function SignupScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Go back"
               >
-                <Ionicons
-                  name="chevron-back"
-                  size={28}
-                  color={colors.text}
-                />
+                <Ionicons name="chevron-back" size={28} color={colors.text} />
               </Pressable>
             </SafeAreaView>
           </View>
