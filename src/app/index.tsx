@@ -1,9 +1,10 @@
 
 import { Image } from "expo-image";
 import type { Href } from "expo-router";
-import { router, Stack } from "expo-router";
+import { Redirect, router, Stack } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
@@ -30,6 +31,7 @@ import {
 } from "react-native-safe-area-context";
 
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { useAuth } from "@/providers/auth-session";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
@@ -52,7 +54,7 @@ const SLIDES: { title: string; body: string }[] = [
   },
   {
     title: "Grow with community and rest.",
-    body: "Connect in the forum, wind down for sleep, and build habits that last.",
+    body: "Explore Discover, talk with your virtual doctor, and build habits that last.",
   },
 ];
 
@@ -262,12 +264,15 @@ export default function WelcomeScreen() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const colors = usePeacePlotColors();
   const { scheme } = usePeacePlotAppearance();
+  const { session, loading: authLoading, isSupabaseConfigured } = useAuth();
   const styles = useMemo(() => createWelcomeStyles(colors), [colors]);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (isSupabaseConfigured && session) return;
     const t = setTimeout(() => setPhase("welcome"), SPLASH_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [authLoading, isSupabaseConfigured, session]);
 
   const onCarouselScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -283,6 +288,26 @@ export default function WelcomeScreen() {
     scheme === "dark"
       ? require("../../assets/images/auth/bg-shape-dark.png")
       : require("../../assets/images/auth/bg-shape.png");
+
+  if (authLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View
+          style={[
+            styles.page,
+            { alignItems: "center", justifyContent: "center" },
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </>
+    );
+  }
+
+  if (isSupabaseConfigured && session) {
+    return <Redirect href="/(drawer)/(tabs)" />;
+  }
 
   if (phase === "splash") {
     return (

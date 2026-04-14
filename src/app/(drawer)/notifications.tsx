@@ -25,7 +25,7 @@ function createStyles(c: PeacePlotPalette) {
   });
 }
 
-export default function ProfileScreen() {
+export default function NotificationsScreen() {
   const router = useRouter();
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -41,13 +41,13 @@ export default function ProfileScreen() {
         >
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>Notifications</Text>
       </View>
       <View style={styles.body}>
         <Text style={styles.copy}>
-          Sign-up fields (userid, email, avatar, password), OAuth, and Supabase
-          profiles will be implemented per the plan. This screen follows the
-          account/profile patterns from design/xhtml.
+          Estimation reminders, system updates, and activity alerts will appear
+          here when connected to Supabase (list/detail pattern aligned with
+          design/xhtml notification.html).
         </Text>
       </View>
     </SafeAreaView>

@@ -22,8 +22,16 @@ const ROUTES: Record<
     activeIcon: "compass",
   },
   measure: { label: "Measure", icon: "pulse-outline", activeIcon: "pulse" },
-  forum: { label: "Forum", icon: "people-outline", activeIcon: "people" },
-  sleep: { label: "Sleep", icon: "moon-outline", activeIcon: "moon" },
+  "virtual-doctor": {
+    label: "Doctor",
+    icon: "medkit-outline",
+    activeIcon: "medkit",
+  },
+  profile: {
+    label: "Profile",
+    icon: "person-outline",
+    activeIcon: "person",
+  },
 };
 
 function createStyles(c: PeacePlotPalette) {

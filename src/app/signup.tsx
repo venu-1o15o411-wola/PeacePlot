@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { Link, router, Stack } from "expo-router";
+import { Link, Redirect, router, Stack } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,6 +21,7 @@ import {
 } from "react-native-safe-area-context";
 
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { useAuth } from "@/providers/auth-session";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
@@ -132,6 +133,12 @@ export default function SignupScreen() {
   const heroHeight = Math.round(height * HERO_RATIO);
   const colors = usePeacePlotColors();
   const { scheme } = usePeacePlotAppearance();
+  const {
+    session,
+    loading: authLoading,
+    isSupabaseConfigured,
+    signUp,
+  } = useAuth();
   const styles = useMemo(() => createSignupStyles(colors), [colors]);
 
   const [userid, setUserid] = useState("");
@@ -141,13 +148,27 @@ export default function SignupScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
+    const u = userid.trim();
+    const em = email.trim();
+    if (!u || !em || !password) {
+      Alert.alert("Create account", "Fill in user ID, email, and password.");
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      Alert.alert(
+        "Supabase not configured",
+        "Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your .env file (see .env.example), then restart Expo.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
-      Alert.alert(
-        "PeacePlot",
-        "If email confirmation is enabled, check your inbox. You can sign in when your account is ready.",
-        [{ text: "OK", onPress: () => router.replace("/signin") }],
-      );
+      await signUp({
+        userid: u,
+        email: em,
+        password,
+      });
+      router.replace("/(drawer)/(tabs)");
     } catch (e) {
       Alert.alert(
         "Sign up failed",
@@ -162,6 +183,10 @@ export default function SignupScreen() {
     scheme === "dark"
       ? require("../../assets/images/auth/bg-shape-dark.png")
       : require("../../assets/images/auth/bg-shape.png");
+
+  if (!authLoading && isSupabaseConfigured && session) {
+    return <Redirect href="/(drawer)/(tabs)" />;
+  }
 
   return (
     <>

@@ -8,7 +8,7 @@ Companion document: [`research.md`](./research.md) (industry notes and design ra
 
 ## 1. Vision
 
-Help users **understand and reduce stress** through **AI-assisted estimation**, **character-aware** guidance, a rich **Discover** library, **sleep** support, and **community** features—delivered in a **calm, trustworthy** mobile-first experience. **Home** is the **landing** hub (doctor quotes + **2×2 Measure** grid); **Journal** lives in the **left drawer**, not the tab bar. **Every feature and page** should follow the **`design/`** templates (structure, spacing, typography, cards, lists, navigation) and the **dark + blue** theme (**§2**). Industry patterns from established wellness apps inform defaults only where this plan does not specify otherwise.
+Help users **understand and reduce stress** through **AI-assisted estimation**, **character-aware** guidance, a rich **Discover** library, and a **virtual doctor** experience—delivered in a **calm, trustworthy** mobile-first experience. **Home** is the **landing** hub (doctor quotes + **2×2 Measure** grid); **Profile** and **Virtual doctor** sit in the **bottom tab bar**; **Journal** and other utilities live in the **left drawer**. **Every feature and page** should follow the **`design/`** templates (structure, spacing, typography, cards, lists, navigation) and the **dark + blue** theme (**§2**). Industry patterns from established wellness apps inform defaults only where this plan does not specify otherwise.
 
 ---
 
@@ -92,7 +92,7 @@ The template’s default accent is **orange** (`#FE9063` in `_variable.scss`). *
 
 - **Auth:** `login.html`, `register.html`, `welcome.html`, `otp-confirm.html`. **`welcome.html`** → **§4.4.2** (`/`); **`login.html`** sign-in layout → **§4.4.3** (`/signin`).
 - **Profile / settings:** `account.html`, `setting.html`, `profile.html`.
-- **Feeds, lists, notifications:** `index.html`, `notification.html` — density for **Discover**, **Forum**, and list-heavy surfaces.
+- **Feeds, lists, notifications:** `index.html`, `notification.html` — density for **Discover** and list-heavy surfaces.
 - **Drawer / menu:** Template **menu-toggler** / offcanvas patterns — map to **left drawer** triggered by the header grid icon (§4.2).
 - **Messaging / social:** `message`-related HTML where present — patterns for **chat rooms** and **chatbot** threads.
 
@@ -119,7 +119,7 @@ flowchart TB
   Welcome([Welcome / splash — /]) --> Auth([Sign up / Sign in])
   Auth --> Shell([Authenticated shell])
 
-  Shell --> Header[Header: peaceplot logo · chat · notifications · drawer trigger]
+  Shell --> Header[Header: peaceplot logo · notifications · drawer trigger]
   Shell --> Tabs
   Shell --> Drawer
 
@@ -128,13 +128,12 @@ flowchart TB
     H[Home]
     D[Discover]
     M["Measure — center, emphasized"]
-    F[Forum]
-    S[Sleep]
+    VD[Virtual doctor]
+    P[Profile]
   end
 
   subgraph Drawer["Left drawer — grid icon"]
     direction TB
-    P[Profile]
     J[Journal]
     L[Logout]
   end
@@ -147,10 +146,10 @@ flowchart LR
   A[Home or Measure tab] --> B[Stress estimation]
   B --> C[Dataset type selection]
   C --> D[AI recommendations]
-  D --> E[Discover · Forum · Sleep · places · trust content]
+  D --> E[Discover · virtual doctor · places · trust content]
 ```
 
-Repeat visits: **Home** for landing (doctor quotes, **2×2 Measure** grid) and quick entry; **Discover** for the library; **Measure** for the highlighted stress hub; **Sleep** for sleep content; **Forum** for community; **Profile** / **Journal** / **Logout** from the **left drawer** (§4.1).
+Repeat visits: **Home** for landing (doctor quotes, **2×2 Measure** grid) and quick entry; **Discover** for the library; **Measure** for the highlighted stress hub; **Virtual doctor** for guided wellness support; **Profile** for account settings; **Journal** / **Logout** and other items from the **left drawer** (§4.1). **Profile** is also reachable from the drawer **Main menu** (switches to the **Profile** tab).
 
 ### 3.3 Character analysis
 
@@ -167,19 +166,18 @@ This section fixes **navigation** and **shell UI** so implementation matches the
 
 - **Layout:** Follow **`design/xhtml/`** `page-wraper` + **fixed header** + **scrollable content** + **bottom tab bar** (template bottom navigation spacing and safe areas).
 - **Header — left:** App logo **`assets/images/brand/peaceplot.png`** (not the Soziety template logo). Scale for header height; preserve aspect ratio.
-- **Header — right (three actions):**
-  1. **Chat** — entry to **messaging / chat rooms** (and/or chatbot entry, depending on product routing).
-  2. **Notifications** — alerts (estimation reminders, replies, system); list/detail pattern like `notification.html`.
-  3. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Visual and structural patterns follow the **Soziety-style** sidebar reference (blue user band, section labels, chevrons, settings block, footer)—see **§4.1.1** for what is implemented in the app. **Journal** stays out of the bottom tab bar (§4.2).
+- **Header — right (two actions + drawer):**
+  1. **Notifications** — opens the **Notifications** screen (`/notifications`, drawer stack route); future list/detail pattern like `notification.html`; wired in **`AppHeader`**.
+  2. **Four-square (grid) icon** — opens a **left-side drawer** (off-canvas menu). Visual and structural patterns follow the **Soziety-style** sidebar reference (blue user band, section labels, chevrons, settings block, footer)—see **§4.1.1** for what is implemented in the app. **Journal** stays out of the bottom tab bar; **Profile** is a tab and is also linked from the drawer (§4.2). **Chat** is not a header action (community/chat deferred; **Virtual doctor** tab covers guided wellness).
 
 ### 4.1.1 Left navigation drawer (implemented UI)
 
-The Expo app implements the drawer in **`src/components/navigation/drawer-content.tsx`** with **`expo-router/drawer`** (`src/app/(drawer)/_layout.tsx`). Styling aligns with **`design/`** sidebar / offcanvas density and the **dark + blue** system (**§2.2**), using token **`drawerBody`** (deep navy, ~`#243460`) and **`drawerHeaderBlue`** (bright blue band, `#2196f3`).
+The Expo app implements the drawer in **`src/components/navigation/drawer-content.tsx`** with **`expo-router/drawer`** (`src/app/(drawer)/_layout.tsx`). Stack routes **`journal`** and **`notifications`** live beside **`(tabs)`** (e.g. **`src/app/(drawer)/notifications.tsx`**). The global tab header is **`src/components/navigation/app-header.tsx`** (logo, notifications → **`/notifications`**, drawer). Styling aligns with **`design/`** sidebar / offcanvas density and the **dark + blue** system (**§2.2**), using token **`drawerBody`** (deep navy, ~`#243460`) and **`drawerHeaderBlue`** (bright blue band, `#2196f3`).
 
 | Region                | Behavior                                                                                                                                                                                                                                                                                                                                                                            |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Top (blue header)** | **User avatar** placeholder (rounded square, white border, person icon until Supabase profile photo). **Greeting** line: time-based (“Good Morning” / “Good Afternoon” / “Good Evening”). **Display name** placeholder: `Guest` until auth profile supplies a name.                                                                                                                 |
-| **MAIN MENU**         | Section title (all-caps). Rows: **icon + label + optional badge + chevron**. **Home** → returns to the **Home** tab; **Profile** / **Journal** → drawer routes; **Notification** (badge `1`) and **Chat** (badge `5`) → placeholder alerts until real screens exist; **Logout** → **`supabase.auth.signOut()`** when configured, then **`router.replace('/signin')`** (**§4.4.3**). |
+| **MAIN MENU**         | Section title (all-caps). Rows: **icon + label + optional badge + chevron**. **Home** → returns to the **Home** tab; **Profile** → opens the **Profile** tab; **Journal** → **`/journal`**; **Notifications** (badge `1`) → **`/notifications`** (same screen as header bell); **Logout** → **`supabase.auth.signOut()`** when configured, then **`router.replace('/signin')`** (**§4.4.3**). **Chat** row removed from the drawer (not in current IA). |
 | **SETTINGS**          | Separator line. **Dark Mode** → `Switch` bound to **`PeacePlotAppearanceProvider`** (**persisted**); toggles **light/dark** palettes (**§2.2**) and navigation/chrome; product **default** remains **dark + blue**.                                                                                                                                                                 |
 | **Footer (pinned)**   | **`PeacePlot`** (bold) and **`App Version {version}`** via **`expo-constants`** (falls back to `1.0.0` if unset).                                                                                                                                                                                                                                                                   |
 
@@ -187,15 +185,17 @@ The drawer width is ~**86%** of the screen (max **340px**). Rows use **Ionicons*
 
 ### 4.2 Bottom navigation (five tabs, fixed)
 
-Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · **Sleep**.
+Order (left → right): **Home** · **Discover** · **Measure** · **Virtual doctor** · **Profile**.
 
-| Tab          | Working name | Primary purpose                                                                                                                                                                                                                                                                                                                | Notes                                                                                                                     |
-| ------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| **Home**     | `home`       | **Landing** experience: see **§4.3** (header, doctor-quotes slider, **2×2 Measure** grid). Entry to **stress estimation** and trust content.                                                                                                                                                                                   | Default tab after sign-in.                                                                                                |
-| **Discover** | `discover`   | **Content library** (replaces “Relax Hub”): books, video, image, story, music, **Yoga & Tai Chi**, **AI advice**, location/places—browse and filter.                                                                                                                                                                           | Dataset-type gating still applies before recommendations (§3.1).                                                          |
-| **Measure**  | `measure`    | **Stress measurement** hub — **icon-only** (or label optional); must **visually dominate** the tab bar vs. other four tabs (larger glyph, primary color ring, raised / “FAB”-style attach, or similar). Routes into the **same measurement modalities** as Home’s grid (camera, fingerprint, audio-for-measurement, question). | **Not** a music or entertainment tab; **audio** here = **capture for estimation** (speech-to-text), not playback library. |
-| **Forum**    | `forum`      | **Articles**, **chat rooms**, **chatbot**, community                                                                                                                                                                                                                                                                           | See §5.3.                                                                                                                 |
-| **Sleep**    | `sleep`      | **Sleep feature set** (see §5.6): stories, sounds, wind-down, routines, scheduling—aligned with `research.md` sleep benchmarks.                                                                                                                                                                                                | Distinct from **Discover**; optimized for bedtime use.                                                                    |
+| Tab               | Route / name      | Primary purpose                                                                                                                                                                                                                                                                                                                | Notes                                                                                                                     |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **Home**          | `index`           | **Landing** experience: see **§4.3** (header, doctor-quotes slider, **2×2 Measure** grid). Entry to **stress estimation** and trust content.                                                                                                                                                                                   | Default tab after sign-in.                                                                                                |
+| **Discover**      | `discover`        | **Content library** (replaces “Relax Hub”): books, video, image, story, music, **Yoga & Tai Chi**, **AI advice**, location/places—browse and filter. Sleep-oriented audio (stories, soundscapes) may appear here as **content types**, not a separate tab.                                                                      | Dataset-type gating still applies before recommendations (§3.1).                                                          |
+| **Measure**       | `measure`         | **Stress measurement** hub — **icon-only** (or label optional); must **visually dominate** the tab bar vs. other four tabs (larger glyph, primary color ring, raised / “FAB”-style attach, or similar). Routes into the **same measurement modalities** as Home’s grid (camera, fingerprint, audio-for-measurement, question). | **Not** a music or entertainment tab; **audio** here = **capture for estimation** (speech-to-text), not playback library. |
+| **Virtual doctor**| `virtual-doctor`  | **Guided wellness conversation** / doctor-style support (AI and/or provider integrations **TBD**): education, triage into **Discover** content, crisis disclaimers—**not** emergency care.                                                                                                                                      | Scaffold: **`src/app/(drawer)/(tabs)/virtual-doctor.tsx`**.                                                               |
+| **Profile**       | `profile`         | **Account**: userid, email, avatar, password, OAuth linkage, Supabase **`profiles`** row—patterns from **`design/xhtml/`** account/profile screens.                                                                                                                                                                             | Same screen reachable from the drawer **Profile** row (switches to this tab).                                            |
+
+**Removed from bottom navigation:** **Forum** and **Sleep** tabs (former community + sleep surface). Community/chat and sleep **content** may re-enter later via **Discover**, **Virtual doctor**, or drawer entries—**not** as dedicated bottom tabs.
 
 **Removed from bottom navigation (vs. earlier drafts):** **Insight** tab — superseded by **Journal** in the **drawer** (§4.1). **Relax Hub** — renamed **Discover**. **Audio** tab — **removed**; audio is **only** a **modality under Measure / Home** for stress assessment, not a standalone tab.
 
@@ -205,7 +205,7 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 **Home — landing page (primary dashboard):**
 
-- **Header:** Unchanged from **§4.1** (`peaceplot.png` left; chat, notifications, grid/drawer right).
+- **Header:** Unchanged from **§4.1** (`peaceplot.png` left; notifications, grid/drawer right — no chat icon).
 - **Famous doctors — slider / carousel:** Short **quotes or sayings** from credentialed / trust-layer doctors (copy + attribution; **circular avatar** beside name/role, **`expo-image`**, assets under **`assets/images/doctors/`** per **§2.4**). Swipe with calm pacing; align with **§5.4**. _(Implemented in **`src/components/home/doctor-quotes-slider.tsx`**.)_
 - **Measure — 2×2 grid (hero):** Four large tappable tiles in a **two-column, two-row** layout. Each tile is **visually strong**: **icon-forward** (high-quality vector or custom artwork), clear label, and primary/highlight styling consistent with **§2.2**:
   1. **Camera** — face / visual capture for estimation (privacy consent before first use).
@@ -221,7 +221,7 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 **Recommendations & AI advice:**
 
-- Results screen(s) after gating: personalized **methods** and **content pointers** into **Discover** / **Forum** / **Sleep** as appropriate.
+- Results screen(s) after gating: personalized **methods** and **content pointers** into **Discover** / **Virtual doctor** / trust content as appropriate.
 - **AI advice** as a **content type** and/or **inline** assistant copy—consistent with trust disclaimers (no medical claims unless compliance allows).
 
 **Discover** (library; former Relax Hub):
@@ -232,25 +232,10 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 - **Activities:** **Yoga**, **Tai Chi**.
 - **Places:** **Location-based** “famous places” (map/list), permission-gated.
 
-**Sleep** (dedicated tab — §5.6):
+**Virtual doctor** (tab — `virtual-doctor`):
 
-- Bedtime-focused **sleep stories**, **soundscapes**, **wind-down**, **schedules / reminders**, optional **sleep tracking** or **Health** integration—scoped in implementation; see **`research.md`** for competitive pros.
-
-**Forum & community:**
-
-- **Articles** with **article management** (authoring/publishing flow—scope with backend).
-- **Chat rooms** with **search for users by `userid` and email** (privacy and abuse considerations in implementation).
-- **Chatbot** for automated Q&A / triage into content.
-- **Comments:** **Threaded (“tree”) comments only** (no flat-only mode required).
-- **Reactions:** **Thumb up / like** as specified; other reactions only if added later.
-
-**Forum — implemented UI (scaffold, mock data):**
-
-- **Route:** Tab **`forum`** → stack under **`src/app/(drawer)/(tabs)/forum/`** — **`index`** (`ForumHub` in **`src/components/forum/forum-hub.tsx`**), **`chatbot`**, **`article/[id]`**, **`room/[id]`**; **`src/data/forum-mock.ts`** supplies lists until Supabase.
-- **Hub:** Intro, **community guidelines** alert (research §9 — safety, crisis copy, reporting, opt-in search), **search**, chips (**All** / **Articles** / **Chat rooms** / **Chatbot**), **PeacePlot assistant** row, article rows (meta: author, time, read length, comment/like counts), chat room rows (topic, member estimate, optional **LIVE** badge) — density aligned with **`design/xhtml/`** post/list patterns.
-- **Article detail:** Body copy (placeholder by article id), **like** on article (placeholder alert to backend), **threaded comments** rendered recursively (tree only), wellness footer.
-- **Room detail:** Topic + placeholder for realtime chat; **Find people (planned)** → alert citing **opt-in discoverability** and rate limits (research §9 / plan §5.3).
-- **Chatbot screen:** Disabled composer + **SEND** placeholder + crisis footer; full AI + safety classifiers deferred to **§6.1**.
+- **Purpose:** A dedicated surface for **doctor-style wellness guidance** (AI and/or human-provider flows **TBD**): education, gentle check-ins, routing users to **Discover** content, and clear **non-emergency** disclaimers. Not a replacement for crisis lines or clinical care.
+- **Implementation:** Scaffold at **`src/app/(drawer)/(tabs)/virtual-doctor.tsx`**; expand per trust/safety review (**research.md** §3, §9).
 
 **Journal** (drawer — not a tab):
 
@@ -258,10 +243,19 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 
 ### 4.4 Authentication & account (behavior)
 
-- **Sign-up fields:** `userid`, `useremail`, `avatar`, `password`.
-- **`userid`:** **Globally unique**; **validate uniqueness** before completion (client checks + server authority).
+- **Sign-up fields (UI):** unique **`userid`**, **`email`**, **`password`**, and later **`avatar`** (Storage URL in **`profiles`**, not a column for raw uploads).
+- **`userid`:** **Globally unique**; **validate uniqueness** before completion (client **`is_userid_available` RPC** when present + **Postgres** unique index on **`profiles.userid`**).
 - **OAuth providers:** **Google**, **Outlook (Microsoft)**, **Apple** — in addition to or paired with email/password per platform policy.
 - **Sign-in / recovery:** Flows consistent with **`design/xhtml/`** auth pages and §2.2 styling.
+
+#### 4.4.0 Supabase data model (what you see in the Dashboard)
+
+After **Register**, **Supabase Table Editor → `public.profiles`** shows a row with **`id`** (same UUID as **`auth.users`**), **`userid`**, **`email`**, and **`created_at`**. This is **expected**.
+
+- **Email and password (credentials):** Stored **only** in Supabase **Auth** (`auth.users`). The password is **hashed** by Supabase Auth and **must never** appear in **`public.profiles`** or any app-managed column.
+- **`public.profiles`:** App-facing profile row: **`id`**, **`userid`** (public handle), **`email`** (denormalized copy from Auth for SQL joins, future **search by email**, and admin/reporting), **`created_at`**. Populated by the **`handle_new_user`** trigger on **`auth.users`** insert (see **`supabase/migrations/`**).
+- **Email confirmation:** **Off** for PeacePlot: **Dashboard → Authentication → Providers → Email** — disable **Confirm email** so **new** **`signUp`** calls return a **session** immediately. Turning this off does **not** retroactively set **`email_confirmed_at`** on **existing** `auth.users` rows. Those accounts can still get **“Email not confirmed”** on **`signInWithPassword`** until you either: **(1)** open **Authentication → Users**, select the user, and **confirm the email**; or **(2)** run the one-time SQL migration **`supabase/migrations/20260415120000_backfill_auth_email_confirmed_at.sql`** in the SQL Editor to set **`email_confirmed_at`** for all still-null rows. The app’s auth error copy points here instead of implying a new inbox link when confirmation is already disabled.
+- **Sign-in errors:** **`src/lib/auth-errors.ts`** maps Supabase messages without telling users to “check email” for a confirmation flow that the project has turned off; unconfirmed-legacy cases reference **Users** in the Dashboard or the **backfill** migration above.
 
 #### 4.4.1 Sign-up screen (implemented UI)
 
@@ -272,7 +266,7 @@ Order (left → right): **Home** · **Discover** · **Measure** · **Forum** · 
 - **Primary button:** Full-width **REGISTER** using **`primary`** + **`textOnPrimary`** (`#2196f3` fill, white label).
 - **Footer:** “Already have an account? **Sign in here**” links to **`/signin`**.
 - **Join-area layout (no `HERO_RATIO` change):** Reduced vertical padding/margins on the form block (title block, fields, **REGISTER**, footer) and slightly tighter input row height so the bottom section aligns like the template reference and fits one viewport on common phones; **`ScrollView`** kept for keyboard and very small screens.
-- **Backend:** When **`EXPO_PUBLIC_*`** Supabase env vars are set, **Register** calls **`supabase.auth.signUp`** with **`options.data.userid`**. Server-side **uniqueness** for `userid` remains to be enforced (Postgres unique constraint / profile table per **§6.1**).
+- **Backend:** When **`EXPO_PUBLIC_*`** Supabase env vars are set, **Register** calls **`supabase.auth.signUp`** with **`options.data.userid`**; **`profiles`** receives **`userid`** + **`email`** from the Auth trigger (**§4.4.0**). **`userid`** uniqueness is enforced in **Postgres** (unique index + trigger error on conflict).
 
 #### 4.4.2 Welcome & launch (implemented UI)
 
@@ -316,28 +310,26 @@ Estimation **combines** available signals with **AI** to produce results used in
 - **AI advice:** Short, actionable suggestions (template + model behavior TBD).
 - **Ordering:** User **selects interested dataset types** after estimation and **before** full recommendation generation (§3.1).
 
-### 5.3 Communities
+### 5.3 Communities (deferred — not in bottom nav)
 
-- **Chatbot:** Automated assistance; may share UI patterns with chat rooms.
-- **Article management:** Create/edit/publish pipeline—depth depends on backend/CMS choices.
-- **Chat rooms:** Multi-user chat; **search users** by **`userid`** and **email**; moderation TBD.
+- **Forum / chat rooms / public articles** are **out of scope for the current tab IA** (removed from §4.2). If brought back, expect **opt-in discoverability**, **blocking**, and **moderation** (research §9); **search by email** is high-risk and needs policy.
+- **Chatbot-style help** may live under **Virtual doctor** or **Discover** rather than a separate **Forum** tab.
 
 ### 5.4 Trust — “famous stress doctors”
 
 - **Content types:** Biographies, articles, books, videos, speeches.
-- **Surface in:** Home (slider), **Discover**, **Sleep**, dedicated drawer entries as appropriate.
+- **Surface in:** Home (slider), **Discover**, **Virtual doctor**, dedicated drawer entries as appropriate.
 
 ### 5.5 Voice as input (measurement) — not a standalone “Audio” product area
 
 - **In-scope:** **Microphone** and **speech-to-text** as inputs to **stress estimation** (Home **Audio** tile, flows launched from **Measure** tab). Clear **mic** consent, recording states, and error handling.
-- **Out of scope for “Audio tab”:** There is **no** bottom tab for music, podcasts, or a generic voice assistant. **Playback** of sleep sounds, stories, or Discover media belongs under **Sleep** or **Discover**, not under “audio measurement.”
+- **Out of scope for “Audio tab”:** There is **no** bottom tab for music, podcasts, or a generic voice assistant. **Playback** of sleep sounds, stories, or other Discover media belongs under **Discover** (content types), not under “audio measurement.”
 - **Optional later:** A **voice assistant** that navigates the app or starts **Measure** remains **optional** and secondary to touch—if added, it does not replace the **Measure** hub semantics above.
 
-### 5.6 Sleep (dedicated tab)
+### 5.6 Sleep content (no dedicated tab)
 
-- **Purpose:** Support **sleep quality** and **bedtime routines** as a first-class area (aligned with competitive benchmarks in **`research.md`**).
-- **Typical contents (prioritize in implementation):** sleep **soundscapes** / **noise**, **sleep stories** or wind-down **audio**, **reminders** or schedule nudges, optional **tracking** or Apple/Google Health **sleep** data (privacy-reviewed).
-- **Relationship to Discover:** **Discover** is **broad wellness content**; **Sleep** is **focused** on wind-down and nightly use—reduce duplicate navigation by cross-linking when useful.
+- **Purpose:** Sleep-related **soundscapes**, **stories**, and **wind-down** remain valuable product ideas (**`research.md`** §6); they are **not** a separate bottom tab in the current IA.
+- **Placement:** Surface sleep **content types** inside **Discover** (filters/collections) and/or link from **Virtual doctor** where appropriate—avoid duplicating a whole parallel “Sleep app” unless product scope expands again.
 
 ---
 
@@ -345,7 +337,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 - **Stack:** Expo (~55), React Native, **expo-router** for navigation.
 - **Platforms:** iOS, Android, Web (per Expo config).
-- **Structure:** **Default route** **`/`** — Welcome (**§4.4.2**); tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**); **drawer** for **§4.1** grid icon — **§4.1.1** layout (user header, MAIN MENU incl. Home / Profile / Journal / Notification / Chat / Logout, SETTINGS, footer); stack routes **`signup`** (**§4.4.1**) / **`signin`** (**§4.4.3**); shared header component with **`assets/images/brand/peaceplot.png`**; **launch splash** on Welcome uses **`assets/images/brand/peaceplot-loading.png`** with motion per **§2.4**; **appearance** — **`PeacePlotAppearanceProvider`** + **`usePeacePlotColors()`** for **light/dark** (**§2.2**).
+- **Structure:** **Default route** **`/`** — Welcome (**§4.4.2**); tab layout for **§4.2** (**Home**, **Discover**, **Measure**, **Virtual doctor**, **Profile**); **drawer** for **§4.1** grid icon — **§4.1.1** layout (user header, MAIN MENU incl. Home / Profile / Journal / Notifications / Logout, SETTINGS, footer); drawer stack routes **`journal`**, **`notifications`**; stack routes **`signup`** (**§4.4.1**) / **`signin`** (**§4.4.3**); shared header component **`AppHeader`** with **`assets/images/brand/peaceplot.png`**; **launch splash** on Welcome uses **`assets/images/brand/peaceplot-loading.png`** with motion per **§2.4**; **appearance** — **`PeacePlotAppearanceProvider`** + **`usePeacePlotColors()`** for **light/dark** (**§2.2**).
 
 ### 6.1 Backend: Supabase (single platform)
 
@@ -357,7 +349,13 @@ Estimation **combines** available signals with **AI** to produce results used in
 - **`/.env`** — **Gitignored**; contains `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and any optional `EXPO_PUBLIC_*` keys). Values come from **Supabase Dashboard → Project Settings → API**.
 - **Expo rule:** Only variables prefixed with **`EXPO_PUBLIC_`** are available in the client bundle. The **`service_role`** key must **never** ship in the app; use it only in **Edge Functions**, **server scripts**, or **CI**, if at all.
 
-**Client code:** `src/lib/supabase.ts` initializes the Supabase client with the anon key. Use **`requireSupabase()`** when the app must talk to the backend; handle `null` during early scaffolding if env vars are missing.
+**Client code:** `src/lib/supabase.ts` initializes the Supabase client with the anon key and **AsyncStorage** session persistence. **`AuthProvider`** (`src/providers/auth-session.tsx`) exposes session state, **`signInWithPassword`**, **`signUp`** (metadata `userid`; expects **immediate session** — **§4.4.0**), **`signOut`**, and **`resetPasswordForEmail`**. Use **`requireSupabase()`** in non-React modules when the backend is required; when env vars are missing, `supabase` is `null` and UI should explain configuration.
+
+**SQL migrations (run in order in the Supabase SQL Editor):**
+
+1. **`supabase/migrations/20260411120000_auth_profiles.sql`** — **`profiles`** (`id`, **`userid`**, **`email`**, **`created_at`**), **`is_userid_available`**, **`handle_new_user`** trigger on **`auth.users`**.
+2. **`supabase/migrations/20260414120000_profiles_add_email.sql`** — If you created **`profiles`** before **`email`** existed: adds **`email`**, backfills from **`auth.users`**, and replaces **`handle_new_user`** to populate **`email`**. Skip redundant statements if your **`profiles`** already matches **§4.4.0**.
+3. **`supabase/migrations/20260415120000_backfill_auth_email_confirmed_at.sql`** — One-time **`auth.users`** update so legacy accounts can sign in after **Confirm email** is disabled (**§4.4.0**).
 
 **Feature mapping (high level):**
 
@@ -368,8 +366,8 @@ Estimation **combines** available signals with **AI** to produce results used in
 | Stress history, character, recommendations | Postgres tables + RLS                                                         |
 | Journal entries                            | Postgres + RLS (user-owned rows)                                              |
 | Sleep sessions / preferences (if tracked)  | Postgres + optional Health sync via platform APIs                             |
-| Forum, articles, tree comments, likes      | Postgres + optional Realtime                                                  |
-| Chat rooms                                 | Realtime channels and/or Postgres-backed messages                             |
+| Virtual doctor sessions / messages (future) | Postgres + RLS + optional Edge Functions for AI                               |
+| Deferred: forum, articles, chat rooms      | Not in current IA; Realtime if reintroduced                                    |
 | Voice / STT / AI                           | Edge Functions (secrets in Supabase env, not in Expo); **measurement**-scoped |
 | Location / places                          | Postgres + external APIs via Edge Functions if needed                         |
 
@@ -379,16 +377,16 @@ Estimation **combines** available signals with **AI** to produce results used in
 
 ## 7. Build phases (suggested)
 
-1. **Design lock** — Freeze **§4** IA (five tabs + **Measure** emphasis, **Home** landing, drawer **Journal**), **§2.0** compliance (every screen maps to a **`design/xhtml/`** pattern), **§2.2** tokens (dark + blue default), **`assets/images/brand/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per surface.
-2. **Shell & navigation** — **`expo-router`** default **`/`** Welcome (**§4.4.2**), tabs (**Home**, **Discover**, **Measure**, **Forum**, **Sleep**), **custom tab bar** for **prominent center Measure** (§4.2), global **header** + **left drawer** per **§4.1.1** (Soziety-style sidebar, footer, settings row), stack **signup** (**§4.4.1**) / **signin** (**§4.4.3**), **theme** (§2), **splash + loading** per **§2.4**, placeholder inner screens.
+1. **Design lock** — Freeze **§4** IA (five tabs + **Measure** emphasis, **Home** landing, **Virtual doctor** + **Profile** tabs, drawer **Journal**), **§2.0** compliance (every screen maps to a **`design/xhtml/`** pattern), **§2.2** tokens (dark + blue default), **`assets/images/brand/peaceplot.png`** / **`peaceplot-loading.png`** usage, and **§2.4** loading motion rules; list **design/** HTML references per surface.
+2. **Shell & navigation** — **`expo-router`** default **`/`** Welcome (**§4.4.2**), tabs (**Home**, **Discover**, **Measure**, **Virtual doctor**, **Profile**), **custom tab bar** for **prominent center Measure** (§4.2), global **header** + **left drawer** per **§4.1.1** (Soziety-style sidebar, footer, settings row), stack **signup** (**§4.4.1**) / **signin** (**§4.4.3**), **theme** (§2), **splash + loading** per **§2.4**, placeholder inner screens.
 3. **Supabase foundation** — Create project, configure **`.env`** from **`.env.example`**, wire **Auth** redirect URLs, baseline **schema** / **RLS** and **Storage** buckets per **§6.1**.
 4. **Auth** — Email/password + **`userid` uniqueness** + avatar via **Supabase Auth** + profiles table; **OAuth** Google / Microsoft / Apple per **§6.1**.
 5. **Home landing** — Header (§4.1), **doctor quotes** slider, **2×2 Measure** grid with **strong icons** (camera, fingerprint, audio-for-measurement, question) per **§4.3**.
 6. **Stress estimation (MVP)** — **Question** + **speech-to-text** paths; result persistence; **dataset type selection** → **recommendations** UI (can use mock AI); align **Measure** tab with same four modalities.
 7. **Discover** — Library browsing by content type; hooks for **location** places.
 8. **Journal** — Drawer **Journal** screens (entries, optional links to check-ins); **not** a tab.
-9. **Sleep** — Tab content: sounds, stories, wind-down—see **`research.md`** and **§5.6**.
-10. **Forum** — Articles list/detail, **tree comments**, **likes**; **chat rooms** + **user search**; **chatbot** entry.
+9. **Virtual doctor** — Expand tab beyond scaffold: safe copy, AI/provider routing, links to **Discover**; see **§4.3** / **§5** (formerly forum/chatbot scope may fold in here).
+10. **Profile** — Account settings, **`profiles`** integration, avatar upload.
 11. **Trust content** — Doctor slider copy, **Discover** surfaces, **§5.4**.
 12. **Additional estimation channels** — Camera, fingerprint, smartwatch as prioritized.
 13. **Polish** — Accessibility, **loading/empty** states (reuse **`peaceplot-loading`** where full-screen; **§2.4** reduce-motion), performance, App Store privacy strings.
@@ -398,7 +396,7 @@ Estimation **combines** available signals with **AI** to produce results used in
 ## 8. Out of scope until explicitly scheduled
 
 - **Clinical claims** or regulated medical device positioning without legal review.
-- **Full moderation** and **admin** tooling for forums (unless specified).
+- **Full moderation** and **admin** tooling for large-scale forums (unless community features return to scope).
 - **Deep wearable** or **lab** integrations beyond agreed phases.
 - Features explicitly deferred from **§7** until pulled into a sprint.
 - **Non-Supabase backends** for core data/auth (unless the plan is formally revised)—integrations should go through **Supabase** (e.g. Edge Functions) where possible.
@@ -411,4 +409,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-12_
+_Last updated: 2026-04-15_

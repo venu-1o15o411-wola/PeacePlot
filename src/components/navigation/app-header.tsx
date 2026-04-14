@@ -1,18 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { DrawerActions } from "@react-navigation/native";
 import { Image } from "expo-image";
-import { useNavigation } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
-
-type AppHeaderProps = {
-  onChatPress?: () => void;
-  onNotifyPress?: () => void;
-};
 
 function createStyles(colors: PeacePlotPalette) {
   return StyleSheet.create({
@@ -42,14 +37,19 @@ function createStyles(colors: PeacePlotPalette) {
   });
 }
 
-export function AppHeader({ onChatPress, onNotifyPress }: AppHeaderProps) {
+export function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const router = useRouter();
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const openDrawer = () => {
     navigation.dispatch(DrawerActions.openDrawer());
+  };
+
+  const openNotifications = () => {
+    router.push("/notifications");
   };
 
   return (
@@ -62,19 +62,7 @@ export function AppHeader({ onChatPress, onNotifyPress }: AppHeaderProps) {
       />
       <View style={styles.actions}>
         <Pressable
-          onPress={onChatPress}
-          style={styles.iconBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Chat"
-        >
-          <Ionicons
-            name="chatbubble-outline"
-            size={24}
-            color={colors.text}
-          />
-        </Pressable>
-        <Pressable
-          onPress={onNotifyPress}
+          onPress={openNotifications}
           style={styles.iconBtn}
           accessibilityRole="button"
           accessibilityLabel="Notifications"
