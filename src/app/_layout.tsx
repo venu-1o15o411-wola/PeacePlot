@@ -9,6 +9,7 @@ import {
   getPeacePlotNavigationTheme,
   PeacePlotPalettes,
 } from "@/theme/peaceplot-theme";
+import { AuthProvider } from "@/providers/auth-session";
 import {
   PeacePlotAppearanceProvider,
   usePeacePlotAppearance,
@@ -35,35 +36,37 @@ function NavigationShell({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <PeacePlotAppearanceProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <NavigationShell>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(drawer)" />
-            <Stack.Screen
-              name="estimate"
-              options={{
-                presentation: "card",
-                animation: "slide_from_right",
-              }}
-            />
-            <Stack.Screen
-              name="signup"
-              options={{
-                presentation: "card",
-                animation: "slide_from_right",
-              }}
-            />
-            <Stack.Screen
-              name="signin"
-              options={{
-                presentation: "card",
-                animation: "slide_from_right",
-              }}
-            />
-          </Stack>
-        </NavigationShell>
-      </GestureHandlerRootView>
+      <AuthProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationShell>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(drawer)" />
+              <Stack.Screen
+                name="estimate"
+                options={{
+                  presentation: "card",
+                  animation: "slide_from_right",
+                }}
+              />
+              <Stack.Screen
+                name="signup"
+                options={{
+                  presentation: "card",
+                  animation: "slide_from_right",
+                }}
+              />
+              <Stack.Screen
+                name="signin"
+                options={{
+                  presentation: "card",
+                  animation: "slide_from_right",
+                }}
+              />
+            </Stack>
+          </NavigationShell>
+        </GestureHandlerRootView>
+      </AuthProvider>
     </PeacePlotAppearanceProvider>
   );
 }

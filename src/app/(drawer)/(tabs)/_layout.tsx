@@ -20,8 +20,11 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" options={{ title: "Home" }} />
         <Tabs.Screen name="discover" options={{ title: "Discover" }} />
         <Tabs.Screen name="measure" options={{ title: "Measure" }} />
-        <Tabs.Screen name="forum" options={{ title: "Forum" }} />
-        <Tabs.Screen name="sleep" options={{ title: "Sleep" }} />
+        <Tabs.Screen
+          name="virtual-doctor"
+          options={{ title: "Virtual doctor" }}
+        />
+        <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       </Tabs>
     </View>
   );

@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import type { Href } from "expo-router";
-import { Link, router, Stack } from "expo-router";
+import { Link, Redirect, router, Stack } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +22,7 @@ import {
 } from "react-native-safe-area-context";
 
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { useAuth } from "@/providers/auth-session";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
@@ -157,6 +158,13 @@ export default function SigninScreen() {
   const heroHeight = Math.round(height * HERO_RATIO);
   const colors = usePeacePlotColors();
   const { scheme } = usePeacePlotAppearance();
+  const {
+    session,
+    loading: authLoading,
+    isSupabaseConfigured,
+    signInWithPassword,
+    resetPasswordForEmail,
+  } = useAuth();
   const styles = useMemo(() => createSigninStyles(colors), [colors]);
 
   const [email, setEmail] = useState("");
@@ -165,8 +173,21 @@ export default function SigninScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   async function onSignIn() {
+    const trimmed = email.trim();
+    if (!trimmed || !password) {
+      Alert.alert("Sign in", "Enter your email and password.");
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      Alert.alert(
+        "Supabase not configured",
+        "Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to your .env file (see .env.example), then restart Expo.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
+      await signInWithPassword(trimmed, password);
       router.replace("/(drawer)/(tabs)" as Href);
     } catch (e) {
       Alert.alert(
@@ -175,6 +196,36 @@ export default function SigninScreen() {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function onForgotPassword() {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      Alert.alert(
+        "Forgot password",
+        "Enter your email above, then tap Forgot Password again—we’ll send a reset link.",
+      );
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      Alert.alert(
+        "Supabase not configured",
+        "Add Supabase keys in .env to enable password reset.",
+      );
+      return;
+    }
+    try {
+      await resetPasswordForEmail(trimmed);
+      Alert.alert(
+        "Check your email",
+        "If an account exists for that address, you’ll receive a link to reset your password.",
+      );
+    } catch (e) {
+      Alert.alert(
+        "Reset failed",
+        e instanceof Error ? e.message : "Unknown error",
+      );
     }
   }
 
@@ -189,6 +240,10 @@ export default function SigninScreen() {
     scheme === "dark"
       ? require("../../assets/images/auth/bg-shape-dark.png")
       : require("../../assets/images/auth/bg-shape.png");
+
+  if (!authLoading && isSupabaseConfigured && session) {
+    return <Redirect href="/(drawer)/(tabs)" />;
+  }
 
   return (
     <>
@@ -300,15 +355,7 @@ export default function SigninScreen() {
                   </View>
                 </View>
 
-                <Pressable
-                  onPress={() =>
-                    Alert.alert(
-                      "Forgot password",
-                      "Recovery flow will match plan §4.4 (email reset via Supabase).",
-                    )
-                  }
-                  style={styles.forgotRow}
-                >
+                <Pressable onPress={onForgotPassword} style={styles.forgotRow}>
                   <Text style={styles.forgotLink}>Forgot Password</Text>
                 </Pressable>
 

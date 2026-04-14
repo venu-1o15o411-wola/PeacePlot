@@ -3,7 +3,7 @@ import { DrawerContentComponentProps } from "@react-navigation/drawer";
 import Constants from "expo-constants";
 import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Alert,
   Pressable,
@@ -16,11 +16,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { useAuth } from "@/providers/auth-session";
 import {
   usePeacePlotAppearance,
   usePeacePlotColors,
 } from "@/providers/peaceplot-appearance";
-import { supabase } from "@/lib/supabase";
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -178,7 +178,15 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const greeting = useMemo(() => getGreeting(), []);
-  const [displayName] = useState("Guest");
+  const { user, signOut, isSupabaseConfigured } = useAuth();
+  const displayName = useMemo(() => {
+    const meta = user?.user_metadata as { userid?: string } | undefined;
+    const fromId = meta?.userid?.trim();
+    if (fromId) return fromId;
+    const em = user?.email?.trim();
+    if (em) return em.split("@")[0] ?? "Guest";
+    return "Guest";
+  }, [user]);
   const colors = usePeacePlotColors();
   const { scheme, setScheme } = usePeacePlotAppearance();
   const styles = useMemo(() => createDrawerStyles(colors), [colors]);
@@ -191,24 +199,35 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
     props.navigation.navigate("(tabs)", { screen: "index" });
   };
 
-  const go = (path: "/profile" | "/journal") => {
+  const goProfileTab = () => {
     close();
-    router.push(path as Href);
+    props.navigation.navigate("(tabs)", { screen: "profile" });
+  };
+
+  const goJournal = () => {
+    close();
+    router.push("/journal" as Href);
+  };
+
+  const goNotifications = () => {
+    close();
+    router.push("/notifications" as Href);
   };
 
   const logout = async () => {
     close();
     try {
-      await supabase?.auth.signOut();
-    } catch {
-      
+      if (isSupabaseConfigured) {
+        await signOut();
+      }
+    } catch (e) {
+      Alert.alert(
+        "Sign out failed",
+        e instanceof Error ? e.message : "Unknown error",
+      );
+      return;
     }
     router.replace("/signin" as Href);
-  };
-
-  const comingSoon = (label: string) => {
-    close();
-    Alert.alert(label, "This destination will be connected in a later build.");
   };
 
   return (
@@ -234,26 +253,15 @@ export function PeacePlotDrawerContent(props: DrawerContentComponentProps) {
         <MenuRow
           icon="person-outline"
           label="Profile"
-          onPress={() => go("/profile")}
+          onPress={goProfileTab}
         />
-        <MenuRow
-          icon="book-outline"
-          label="Journal"
-          onPress={() => go("/journal")}
-        />
+        <MenuRow icon="book-outline" label="Journal" onPress={goJournal} />
         <MenuRow
           icon="notifications-outline"
-          label="Notification"
-          onPress={() => comingSoon("Notifications")}
+          label="Notifications"
+          onPress={goNotifications}
           badge={1}
           badgeTone="red"
-        />
-        <MenuRow
-          icon="chatbubble-outline"
-          label="Chat"
-          onPress={() => comingSoon("Chat")}
-          badge={5}
-          badgeTone="purple"
         />
         <MenuRow
           icon="log-out-outline"
