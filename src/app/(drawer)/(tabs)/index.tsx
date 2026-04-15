@@ -3,14 +3,14 @@ import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { DoctorQuotesSlider } from "@/components/home/doctor-quotes-slider";
 import { MeasureGrid } from "@/components/home/measure-grid";
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 function createHomeStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
     scroll: {
       flex: 1,
-      backgroundColor: c.background,
+      backgroundColor: "transparent",
     },
     content: {
       paddingHorizontal: 16,

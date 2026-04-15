@@ -1,17 +1,20 @@
 import { Stack } from "expo-router";
 import React, { useMemo } from "react";
 
-import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import { PeacePlotAmbientBackground } from "@/components/shell/peaceplot-ambient-background";
 
 export default function EstimateStackLayout() {
-  const colors = usePeacePlotColors();
   const screenOptions = useMemo(
     () => ({
       headerShown: false as const,
-      contentStyle: { backgroundColor: colors.background },
+      contentStyle: { backgroundColor: "transparent" },
     }),
-    [colors.background],
+    [],
   );
 
-  return <Stack screenOptions={screenOptions} />;
+  return (
+    <PeacePlotAmbientBackground>
+      <Stack screenOptions={screenOptions} />
+    </PeacePlotAmbientBackground>
+  );
 }

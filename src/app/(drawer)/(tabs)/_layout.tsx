@@ -4,26 +4,25 @@ import { StyleSheet, View } from "react-native";
 
 import { AppHeader } from "@/components/navigation/app-header";
 import { PeaceTabBar } from "@/components/navigation/peace-tab-bar";
-import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 export default function TabsLayout() {
-  const colors = usePeacePlotColors();
   return (
-    <View style={[styles.wrap, { backgroundColor: colors.background }]}>
+    <View style={styles.wrap}>
       <AppHeader />
       <Tabs
         tabBar={(props) => <PeaceTabBar {...props} />}
         screenOptions={{
           headerShown: false,
+          sceneStyle: { backgroundColor: "transparent" },
         }}
       >
         <Tabs.Screen name="index" options={{ title: "Home" }} />
         <Tabs.Screen name="discover" options={{ title: "Discover" }} />
-        <Tabs.Screen name="measure" options={{ title: "Measure" }} />
         <Tabs.Screen
           name="virtual-doctor"
           options={{ title: "Virtual doctor" }}
         />
+        <Tabs.Screen name="measure" options={{ title: "Measure" }} />
         <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       </Tabs>
     </View>

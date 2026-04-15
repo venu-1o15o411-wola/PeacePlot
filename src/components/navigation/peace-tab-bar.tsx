@@ -62,13 +62,13 @@ function createStyles(c: PeacePlotPalette) {
     labelFocused: {
       color: c.primaryLight2,
     },
-    measureWrap: {
+    centerFabWrap: {
       flex: 1,
       alignItems: "center",
       justifyContent: "flex-end",
       paddingBottom: 2,
     },
-    measureFab: {
+    centerFab: {
       width: 56,
       height: 56,
       borderRadius: 28,
@@ -85,7 +85,7 @@ function createStyles(c: PeacePlotPalette) {
       elevation: 8,
       marginTop: -24,
     },
-    measureFabActive: {
+    centerFabActive: {
       backgroundColor: c.primaryHover,
       borderColor: c.primaryLight2,
     },
@@ -109,7 +109,7 @@ export function PeaceTabBar({
           (options.title as string) || ROUTES[route.name]?.label || route.name;
         const meta = ROUTES[route.name];
         const isFocused = state.index === index;
-        const isMeasure = route.name === "measure";
+        const isCenterFab = route.name === "virtual-doctor";
 
         const onPress = () => {
           const event = navigation.emit({
@@ -135,7 +135,7 @@ export function PeaceTabBar({
             : meta.icon
           : "ellipse-outline";
 
-        if (isMeasure) {
+        if (isCenterFab) {
           return (
             <Pressable
               key={route.key}
@@ -144,12 +144,12 @@ export function PeaceTabBar({
               accessibilityLabel={options.title ?? label}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={styles.measureWrap}
+              style={styles.centerFabWrap}
             >
               <View
                 style={[
-                  styles.measureFab,
-                  isFocused && styles.measureFabActive,
+                  styles.centerFab,
+                  isFocused && styles.centerFabActive,
                 ]}
               >
                 <Ionicons
