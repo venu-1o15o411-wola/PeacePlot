@@ -1,0 +1,196 @@
+import { Image } from "expo-image";
+import React, { useMemo, useRef, useState } from "react";
+import {
+  Dimensions,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+
+const { width: WINDOW_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = Math.min(WINDOW_WIDTH - 48, 340);
+
+const AVATAR = 52;
+
+const PLACEHOLDER_QUOTES: {
+  id: string;
+  quote: string;
+  name: string;
+  role: string;
+  avatar: number;
+}[] = [
+  {
+    id: "1",
+    quote: "“Small steps toward calm compound into lasting resilience.”",
+    name: "Dr. A. Chen",
+    role: "Stress medicine",
+    avatar: require("@/assets/images/doctors/doctor-1.jpg"),
+  },
+  {
+    id: "2",
+    quote: "“Naming your stress is the first move toward easing it.”",
+    name: "Dr. M. Okonkwo",
+    role: "Behavioral health",
+    avatar: require("@/assets/images/doctors/doctor-2.jpg"),
+  },
+  {
+    id: "3",
+    quote: "“Rest is not a reward; it is part of the work of healing.”",
+    name: "Dr. S. Patel",
+    role: "Sleep & recovery",
+    avatar: require("@/assets/images/doctors/doctor-3.jpg"),
+  },
+];
+
+function createStyles(c: PeacePlotPalette) {
+  return StyleSheet.create({
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: c.text,
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    listContent: {
+      paddingRight: 16,
+      gap: 0,
+    },
+    card: {
+      marginRight: 16,
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: 18,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    quote: {
+      fontSize: 16,
+      lineHeight: 24,
+      color: c.textBody,
+      fontStyle: "italic",
+      marginBottom: 14,
+    },
+    attributionRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    avatarRing: {
+      width: AVATAR,
+      height: AVATAR,
+      borderRadius: AVATAR / 2,
+      padding: 2,
+      backgroundColor: c.measureRing,
+    },
+    avatarInner: {
+      flex: 1,
+      borderRadius: (AVATAR - 4) / 2,
+      overflow: "hidden",
+      backgroundColor: c.surfaceDeep,
+    },
+    avatarImg: {
+      width: "100%",
+      height: "100%",
+    },
+    metaCol: {
+      flex: 1,
+      minWidth: 0,
+    },
+    name: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: c.primaryLight2,
+    },
+    role: {
+      fontSize: 12,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    dots: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 6,
+      marginTop: 12,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: c.dotInactive,
+    },
+    dotActive: {
+      backgroundColor: c.primary,
+      width: 18,
+    },
+  });
+}
+
+export function DoctorQuotesSlider() {
+  const [index, setIndex] = useState(0);
+  const listRef = useRef<FlatList>(null);
+  const colors = usePeacePlotColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const i = Math.round(x / (CARD_WIDTH + 16));
+    setIndex(i);
+  };
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>From our doctors</Text>
+      <FlatList
+        ref={listRef}
+        data={PLACEHOLDER_QUOTES}
+        horizontal
+        pagingEnabled={false}
+        snapToInterval={CARD_WIDTH + 16}
+        decelerationRate="fast"
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.listContent}
+        renderItem={({ item }) => (
+          <View style={[styles.card, { width: CARD_WIDTH }]}>
+            <Text style={styles.quote}>{item.quote}</Text>
+            <View style={styles.attributionRow}>
+              <View style={styles.avatarRing}>
+                <View style={styles.avatarInner}>
+                  <Image
+                    source={item.avatar}
+                    style={styles.avatarImg}
+                    contentFit="cover"
+                    accessibilityLabel={`Portrait of ${item.name}`}
+                  />
+                </View>
+              </View>
+              <View style={styles.metaCol}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.role}>{item.role}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      />
+      <View style={styles.dots}>
+        {PLACEHOLDER_QUOTES.map((q, i) => (
+          <View
+            key={q.id}
+            style={[styles.dot, i === index && styles.dotActive]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}

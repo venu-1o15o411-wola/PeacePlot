@@ -1,0 +1,272 @@
+.post-btn{
+	padding: 10px 12px;
+	background-color: var(--secondary);
+	border-radius: var(--border-radius-sm);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	&:hover{
+		color: #fff;
+	}
+}
+.post-profile{
+	margin-bottom: 20px;
+	.left-content{
+		display: flex;
+		align-items: center;
+		.meta-list{
+			display: flex;
+			align-items: center;	
+			li{
+				a{
+					color: #817474;
+					display: flex;
+					align-items: center;
+					border: 1px solid #C9C9C9;
+					border-radius: 6px;
+					font-size: 0.75rem;
+					font-weight: 500;
+					padding: 3px 6px;
+					i{
+						font-size: 14px;
+					}
+					svg{
+						width: 16px;
+						height: 16px;
+						path{
+							fill: #817474;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+.post-content-area{
+	margin-bottom: 20px;
+	.form-control{
+		border: 0;
+		padding: 6px;
+		height: 400px;
+		font-size: 1.5rem;
+		&::placeholder{
+			font-size: 1.5rem;
+			color: #919191;
+		}
+		&:focus{
+			box-shadow: unset;
+		}
+	}
+}
+
+.element-list{
+	li{
+		padding: 10px 15px;
+		margin: 0 -15px;
+		border-top: 1px solid var(--border-color);
+		a{
+			display: flex;
+			align-items: center;
+			color: var(--dark);
+			font-size: 16px;
+			i{
+				color: var(--primary);
+				margin-right: 8px;
+				font-size: 24px;
+			}
+		}
+	}
+	&.style-2{
+		li{
+			display: flex;
+			align-items: center;
+			border-top: 0;
+			border-bottom: 1px solid var(--border-color);
+			a{
+				svg{
+					margin-right: 8px;
+				}
+			}
+		}
+	}
+}
+
+//Profile ===== 
+
+//Edit Profile
+.edit-profile{
+	.profile-image{
+		margin: 15px 0;
+		text-align: center;
+		.media{
+			margin: 0 auto 12px;
+			img{
+				object-fit: cover;
+			}
+		}
+		a{
+			display: block;
+			color: var(--secondary);
+			font-size: 1rem;
+		}
+	}
+}
+.link-list{
+	li{
+		padding: 10px 15px;
+		margin: 0 -15px;
+		border-bottom: 1px solid var(--border-color);
+		a{
+			color: var(--secondary);
+			font-size: 1rem;	
+		}
+		&:first-child{
+			a{
+				color: var(--dark);
+			}
+		}
+	}
+}
+
+//User Profile
+.list-button{
+	display: flex;
+	align-items: center;
+	li{
+		width: 100%;
+		margin-right: 8px;	
+		&:last-child{
+			margin-right: 0;	
+			width: auto;			
+		}
+		a{
+			background: var(--rgba-primary-2);
+			color: var(--primary);
+			padding: 5px 12px;
+			display: block;
+			font-weight: 600;
+			border-radius: 8px;
+			text-align: center;
+			svg{
+				path{
+					fill: var(--primary);
+				}
+			}	
+		}
+	}
+}
+
+//Live Story =====
+.comment-list{
+	width: 70%;
+	margin-bottom: 20px;
+	li{		
+		margin-bottom: 10px;
+		display: flex;
+		align-items: center;
+		padding: 5px 0;
+		border-radius: 50px;
+		
+		.text{
+			color: rgba(255, 255, 255, 0.79);
+		}
+	}
+}
+
+//Reel Area =====
+.reel-area{
+	position: relative;
+	height: 100%;
+	width: 100%;
+	max-width: 600px;
+	margin: 0 auto;
+	video{
+		min-height: 100vh;
+		width: 100%;
+		object-fit: cover;
+	}
+	.top-content{
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		padding: 15px;
+		z-index: 9;
+	}
+}
+.reel-section{
+	position: absolute;
+	bottom: 20px;
+	left: 0;
+	z-index: 1;
+	display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 15px;
+	width: 100%;
+	.user-item{
+		display: flex;
+		align-items: center;
+		flex: 1;
+	}
+}
+.reel-actions{
+	display: flex;
+	align-items: center;
+    flex-direction: column;
+	.r-btn{
+		color:#fff;
+		text-align: center;
+		font-size: 25px;
+		padding-bottom: 12px;
+		svg{
+			width: 24px;
+			height: 24px;
+			path{
+				fill: #fff;
+			}
+		}
+		span{
+			display: block;
+			font-size: 14px;
+		}
+	}
+}
+
+.mySwiper{
+	height:100vh;
+	overflow: hidden;
+}
+
+
+//Reel Features List ===
+.features-list{
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	li{
+		text-align: center;
+		.dz-icon{
+			width: 60px;
+			height: 60px;
+			border: 1px solid #2F2A2A;
+			border-radius: 50%;
+			margin: 0 auto 10px;
+			i{
+				font-size: 20px;
+				color: #2F2A2A;
+			}
+		}
+		span{
+			font-size: 12px;
+			font-weight: 600;
+			color: #2F2A2A;
+		}
+	}
+}
+.reel-canvas{
+	width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
