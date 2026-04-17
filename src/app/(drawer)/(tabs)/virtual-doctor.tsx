@@ -1,12 +1,12 @@
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
-    scroll: { flex: 1, backgroundColor: c.background },
+    scroll: { flex: 1, backgroundColor: "transparent" },
     content: { padding: 16, paddingBottom: 100 },
     title: {
       fontSize: 22,
