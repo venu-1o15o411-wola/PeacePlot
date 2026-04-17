@@ -10,42 +10,19 @@ import {
   View,
 } from "react-native";
 
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 const { width: WINDOW_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(WINDOW_WIDTH - 48, 340);
+const QUOTE_ART_RATIO = 1376 / 768;
 
-const AVATAR = 52;
-
-const PLACEHOLDER_QUOTES: {
-  id: string;
-  quote: string;
-  name: string;
-  role: string;
-  avatar: number;
-}[] = [
-  {
-    id: "1",
-    quote: "“Small steps toward calm compound into lasting resilience.”",
-    name: "Dr. A. Chen",
-    role: "Stress medicine",
-    avatar: require("@/assets/images/doctors/doctor-1.jpg"),
-  },
-  {
-    id: "2",
-    quote: "“Naming your stress is the first move toward easing it.”",
-    name: "Dr. M. Okonkwo",
-    role: "Behavioral health",
-    avatar: require("@/assets/images/doctors/doctor-2.jpg"),
-  },
-  {
-    id: "3",
-    quote: "“Rest is not a reward; it is part of the work of healing.”",
-    name: "Dr. S. Patel",
-    role: "Sleep & recovery",
-    avatar: require("@/assets/images/doctors/doctor-3.jpg"),
-  },
+const QUOTE_IMAGES: { id: string; image: number }[] = [
+  { id: "1", image: require("../../../assets/images/landing/quotes/1.png") },
+  { id: "2", image: require("../../../assets/images/landing/quotes/2.png") },
+  { id: "3", image: require("../../../assets/images/landing/quotes/3.png") },
+  { id: "4", image: require("../../../assets/images/landing/quotes/4.png") },
+  { id: "5", image: require("../../../assets/images/landing/quotes/5.png") },
 ];
 
 function createStyles(c: PeacePlotPalette) {
@@ -62,58 +39,19 @@ function createStyles(c: PeacePlotPalette) {
     },
     listContent: {
       paddingRight: 16,
-      gap: 0,
     },
     card: {
       marginRight: 16,
-      backgroundColor: c.card,
       borderRadius: 12,
-      padding: 18,
+      overflow: "hidden",
       borderWidth: 1,
       borderColor: c.border,
+      backgroundColor: c.card,
     },
-    quote: {
-      fontSize: 16,
-      lineHeight: 24,
-      color: c.textBody,
-      fontStyle: "italic",
-      marginBottom: 14,
-    },
-    attributionRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-    },
-    avatarRing: {
-      width: AVATAR,
-      height: AVATAR,
-      borderRadius: AVATAR / 2,
-      padding: 2,
-      backgroundColor: c.measureRing,
-    },
-    avatarInner: {
-      flex: 1,
-      borderRadius: (AVATAR - 4) / 2,
-      overflow: "hidden",
+    artwork: {
+      width: CARD_WIDTH,
+      aspectRatio: QUOTE_ART_RATIO,
       backgroundColor: c.surfaceDeep,
-    },
-    avatarImg: {
-      width: "100%",
-      height: "100%",
-    },
-    metaCol: {
-      flex: 1,
-      minWidth: 0,
-    },
-    name: {
-      fontSize: 14,
-      fontWeight: "700",
-      color: c.primaryLight2,
-    },
-    role: {
-      fontSize: 12,
-      color: c.textMuted,
-      marginTop: 2,
     },
     dots: {
       flexDirection: "row",
@@ -151,7 +89,7 @@ export function DoctorQuotesSlider() {
       <Text style={styles.sectionTitle}>From our doctors</Text>
       <FlatList
         ref={listRef}
-        data={PLACEHOLDER_QUOTES}
+        data={QUOTE_IMAGES}
         horizontal
         pagingEnabled={false}
         snapToInterval={CARD_WIDTH + 16}
@@ -162,29 +100,18 @@ export function DoctorQuotesSlider() {
         scrollEventThrottle={16}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <View style={[styles.card, { width: CARD_WIDTH }]}>
-            <Text style={styles.quote}>{item.quote}</Text>
-            <View style={styles.attributionRow}>
-              <View style={styles.avatarRing}>
-                <View style={styles.avatarInner}>
-                  <Image
-                    source={item.avatar}
-                    style={styles.avatarImg}
-                    contentFit="cover"
-                    accessibilityLabel={`Portrait of ${item.name}`}
-                  />
-                </View>
-              </View>
-              <View style={styles.metaCol}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.role}>{item.role}</Text>
-              </View>
-            </View>
+          <View style={styles.card}>
+            <Image
+              source={item.image}
+              style={styles.artwork}
+              contentFit="contain"
+              accessibilityLabel={`Doctor quote image ${item.id}`}
+            />
           </View>
         )}
       />
       <View style={styles.dots}>
-        {PLACEHOLDER_QUOTES.map((q, i) => (
+        {QUOTE_IMAGES.map((q, i) => (
           <View
             key={q.id}
             style={[styles.dot, i === index && styles.dotActive]}

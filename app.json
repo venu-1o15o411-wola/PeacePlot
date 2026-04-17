@@ -35,6 +35,12 @@
           }
         }
       ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "PeacePlot uses the microphone only to record short voice samples for stress check-ins—not for music or background listening."
+        }
+      ],
       "expo-sqlite"
     ],
     "experiments": {

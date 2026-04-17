@@ -4,8 +4,9 @@ import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
+import { AudioMeasureFlow } from "@/components/estimate/audio-measure-flow";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 const TITLES: Record<string, string> = {
   camera: "Camera estimation",
@@ -16,7 +17,7 @@ const TITLES: Record<string, string> = {
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
-    screen: { flex: 1, backgroundColor: c.background },
+    screen: { flex: 1, backgroundColor: "transparent" },
     header: {
       flexDirection: "row",
       alignItems: "center",
@@ -38,6 +39,24 @@ export default function EstimateModeScreen() {
   const title = TITLES[mode ?? ""] ?? "Estimation";
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  if (mode === "audio") {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{title}</Text>
+        </View>
+        <AudioMeasureFlow onBack={() => router.back()} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>

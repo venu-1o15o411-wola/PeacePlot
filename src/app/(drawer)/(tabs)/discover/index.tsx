@@ -7,7 +7,7 @@ import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 export default function DiscoverIndexScreen() {
   const colors = usePeacePlotColors();
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <View style={styles.root}>
       <DiscoverLibrary colors={colors} />
     </View>
   );

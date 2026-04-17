@@ -4,15 +4,15 @@ import React, { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
-import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import { getDiscoverItem } from "@/data/discover-mock";
+import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 function createStyles(c: PeacePlotPalette) {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: c.background,
+      backgroundColor: "transparent",
     },
     backRow: {
       flexDirection: "row",
