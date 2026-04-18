@@ -219,7 +219,10 @@ Order (left → right): **Home** · **Discover** · **Virtual doctor** (center *
 
 - Inputs: **questions**, **speech-to-text (audio-for-measurement)**, **camera (face)**, **fingerprint**; **smart watch** phased (§7).
 - **Mandatory intermediate screen:** **Dataset type selection** **after** estimation, **before** recommendation results.
-- **Audio measurement (implemented path):** **`AudioMeasureFlow`** (`src/components/estimate/audio-measure-flow.tsx`) — **`expo-audio`** recording (permission string via **`expo-audio`** config plugin in **`app.json`**), clear copy that voice is **for measurement only** (see **`research.md`** §4 / §5.5). Flow: record → optional playback preview → **mock** transcript + stress band (`src/lib/mock-voice-estimation.ts`) → **`/estimate/dataset-types`** (gating per §3.1 / §5.2) → **`/estimate/result`** summary. **Speech-to-text and model scoring** remain **Supabase Edge Functions** (§6.1)—replace mocks when wired.
+- **Audio measurement (implemented path):** **`AudioMeasureFlow`** (`src/components/estimate/audio-measure-flow.tsx`) — **`expo-audio`** recording (permission string via **`expo-audio`** config plugin in **`app.json`**), clear copy that voice is **for measurement only** (see **`research.md`** §4 / §5.5). Split into **two clear steps** on one route:
+  - **Step 1 — Capture:** **Press and hold** the **“Professional audio”** control; recording **starts on press-in** and **stops on release** (or at max duration). While recording: **circular time progress** (0→max) via **`react-native-svg`**, **live waveform** bars, and **pulsing rings** (Reanimated). If the user releases before recording actually starts (e.g. permission / prepare still in flight), the take is **aborted** safely.
+  - **Step 2 — Review:** After release, a **review** card shows duration, **optional playback** preview (when a file URI exists), **“Next step”** (→ **`/estimate/dataset-types`** / gating), and **“Record again”** (return to step 1). **Cancel** leaves the flow.
+  - **After “Next step”:** **`/estimate/dataset-types`** (gating per §3.1 / §5.2) → **`/estimate/result`** with **mock** transcript + stress band (`src/lib/mock-voice-estimation.ts`) until **Supabase Edge Functions** (§6.1) replace mocks.
 
 **Recommendations & AI advice:**
 
@@ -411,4 +414,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-20_
+_Last updated: 2026-04-18_
