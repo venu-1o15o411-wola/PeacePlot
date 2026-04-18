@@ -8,7 +8,11 @@
     "scheme": "peaceplot",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.anonymous.PeacePlot",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PeacePlot uses the camera for face check-ins and finger pulse check-ins; the back camera and flash may be used where needed. Photos and video frames are processed on your device for stress estimation."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,20 @@
         "backgroundImage": "./assets/images/app/android-icon-background.png",
         "monochromeImage": "./assets/images/app/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.CAMERA"
+      ],
+      "package": "com.anonymous.PeacePlot"
     },
     "web": {
       "output": "static",
@@ -39,6 +56,20 @@
         "expo-audio",
         {
           "microphonePermission": "PeacePlot uses the microphone only to record short voice samples for stress check-ins—not for music or background listening."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "PeacePlot uses the camera for a one-time face check-in to estimate stress. Photos are processed on your device when face detection is available."
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "PeacePlot uses the back camera and flash to measure a short finger pulse signal for stress check-ins.",
+          "enableMicrophonePermission": false,
+          "enableFrameProcessors": true
         }
       ],
       "expo-sqlite"
