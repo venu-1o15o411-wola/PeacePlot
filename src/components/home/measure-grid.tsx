@@ -129,7 +129,12 @@ export function MeasureGrid() {
         <Pressable
           key={tile.key}
           style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
-          onPress={() => router.push(`/estimate/${tile.key}` as Href)}
+          onPress={() =>
+            router.push({
+              pathname: "/estimate/[mode]",
+              params: { mode: tile.key },
+            } as Href)
+          }
           accessibilityRole="button"
           accessibilityLabel={`${tile.label}: ${tile.subtitle}`}
         >

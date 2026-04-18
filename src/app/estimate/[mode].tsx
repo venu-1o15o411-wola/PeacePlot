@@ -1,13 +1,48 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Constants from "expo-constants";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { Suspense, lazy, useMemo } from "react";
+import type { ComponentType } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AudioMeasureFlow } from "@/components/estimate/audio-measure-flow";
-import { FingerMeasureFlow } from "@/components/estimate/finger-measure-flow";
 import { VisualMeasureFlow } from "@/components/estimate/visual-measure-flow";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
+
+type FingerFlowProps = { onBack: () => void };
+
+/**
+ * Fingerprint-only. Load Vision Camera only in a dev/standalone build.
+ * Expo Go (`appOwnership === 'expo'`) cannot load `react-native-vision-camera`; importing the
+ * `.native` module throws before exports exist, which breaks `React.lazy` (undefined component).
+ */
+const FingerMeasureFlow = lazy(async () => {
+  const inExpoGo = Constants.appOwnership === "expo";
+  const useStub = Platform.OS === "web" || inExpoGo;
+
+  const m = useStub
+    ? await import("@/components/estimate/finger-measure-flow.web")
+    : await import("@/components/estimate/finger-measure-flow.native");
+
+  const Comp = (m.FingerMeasureFlow ??
+    (m as { default: ComponentType<FingerFlowProps> }).default) as
+    | ComponentType<FingerFlowProps>
+    | undefined;
+
+  if (Comp == null) {
+    throw new Error("FingerMeasureFlow failed to load.");
+  }
+
+  return { default: Comp };
+});
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 const TITLES: Record<string, string> = {
@@ -100,7 +135,15 @@ export default function EstimateModeScreen() {
           </Pressable>
           <Text style={styles.headerTitle}>{title}</Text>
         </View>
-        <FingerMeasureFlow onBack={() => router.back()} />
+        <Suspense
+          fallback={
+            <View style={styles.body}>
+              <ActivityIndicator />
+            </View>
+          }
+        >
+          <FingerMeasureFlow onBack={() => router.back()} />
+        </Suspense>
       </SafeAreaView>
     );
   }

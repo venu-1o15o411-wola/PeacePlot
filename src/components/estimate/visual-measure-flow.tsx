@@ -143,7 +143,10 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [demoNotice, setDemoNotice] = useState(false);
-  const [cameraAvailable, setCameraAvailable] = useState<null | boolean>(null);
+  /** Web-only: native iOS/Android should not block on `isAvailableAsync` (it can throw or hang in dev builds). */
+  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(() =>
+    Platform.OS === "web" ? null : true,
+  );
   const [hasHandledUnavailableCamera, setHasHandledUnavailableCamera] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -156,8 +159,9 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
 
 
   useEffect(() => {
+    if (Platform.OS !== "web") return;
     let active = true;
-    CameraView.isAvailableAsync()
+    void CameraView.isAvailableAsync()
       .then((ok) => {
         if (active) setCameraAvailable(ok);
       })
@@ -169,29 +173,29 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
     };
   }, []);
 
+  // expo-camera sometimes never fires onCameraReady while the preview is usable; allow capture after a short delay.
+  useEffect(() => {
+    if (!permission?.granted || cameraAvailable !== true) return;
+    if (Platform.OS === "web") return;
+    const delayMs = Platform.OS === "ios" ? 2800 : 4000;
+    const t = setTimeout(() => {
+      setCameraReady((ready) => ready || true);
+    }, delayMs);
+    return () => clearTimeout(t);
+  }, [permission?.granted, cameraAvailable]);
+
   useEffect(() => {
     if (!permission?.granted || cameraReady || hasHandledUnavailableCamera) return;
     const t = setTimeout(() => {
-      if (cameraReady) return;
       setHasHandledUnavailableCamera(true);
       Alert.alert(
         "Camera unavailable",
-        "PeacePlot couldn't access a working camera right now. Please return and try again when a front camera is available.",
+        "The front camera did not become ready in time. Try leaving this screen and opening Camera again, or restart the app.",
         [{ text: "OK", onPress: onBack }],
       );
-    }, 4500);
+    }, 45_000);
     return () => clearTimeout(t);
   }, [permission?.granted, cameraReady, hasHandledUnavailableCamera, onBack]);
-
-  useEffect(() => {
-    if (!permission?.granted || cameraAvailable !== false || hasHandledUnavailableCamera) return;
-    setHasHandledUnavailableCamera(true);
-    Alert.alert(
-      "No camera device found",
-      "No usable camera device is available on this environment. Returning to the previous page.",
-      [{ text: "OK", onPress: onBack }],
-    );
-  }, [cameraAvailable, hasHandledUnavailableCamera, onBack, permission?.granted]);
 
   const onShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || busy) return;
@@ -319,6 +323,11 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
             mirror
             mode="picture"
             onCameraReady={() => setCameraReady(true)}
+            onMountError={(ev) => {
+              const msg = ev.message || "Could not open the front camera.";
+              setError(msg);
+              Alert.alert("Camera error", msg, [{ text: "OK", onPress: onBack }]);
+            }}
           />
           <View style={styles.hintOverlay} pointerEvents="none">
             <Text style={styles.hintText}>Good light and a steady pose help.</Text>
