@@ -104,8 +104,10 @@ export default function EstimateResultScreen() {
         </Text>
         <Text style={styles.lead}>
           This score is a <Text style={{ fontWeight: "700" }}>placeholder</Text>{" "}
-          until speech-to-text and models run on Supabase per §6.1. Mode:{" "}
-          {p.mode ?? "—"}.
+          {p.mode === "camera"
+            ? "until on-device MobileNetV2 + MediaPipe are fully wired per the stress plan."
+            : "until speech-to-text and models run on Supabase per §6.1."}{" "}
+          Mode: {p.mode ?? "—"}.
           {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
         </Text>
 

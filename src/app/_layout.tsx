@@ -1,3 +1,5 @@
+import "react-native-reanimated";
+
 import { ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -39,31 +41,17 @@ export default function RootLayout() {
       <AuthProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <NavigationShell>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(drawer)" />
-              <Stack.Screen
-                name="estimate"
-                options={{
-                  presentation: "card",
-                  animation: "slide_from_right",
-                }}
-              />
-              <Stack.Screen
-                name="signup"
-                options={{
-                  presentation: "card",
-                  animation: "slide_from_right",
-                }}
-              />
-              <Stack.Screen
-                name="signin"
-                options={{
-                  presentation: "card",
-                  animation: "slide_from_right",
-                }}
-              />
-            </Stack>
+            <Stack
+              screenOptions={({ route }) => ({
+                headerShown: false,
+                ...(["estimate", "signup", "signin"].includes(route.name)
+                  ? {
+                      presentation: "card" as const,
+                      animation: "slide_from_right" as const,
+                    }
+                  : {}),
+              })}
+            />
           </NavigationShell>
         </GestureHandlerRootView>
       </AuthProvider>

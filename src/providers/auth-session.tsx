@@ -41,11 +41,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
+    const watchdog = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 5000);
 
     supabase.auth
       .getSession()
       .then(({ data: { session: next } }) => {
         if (!cancelled) setSession(next);
+      })
+      .catch(() => {
+        // Keep app usable even if auth bootstrap fails.
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -59,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
+      clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, []);
