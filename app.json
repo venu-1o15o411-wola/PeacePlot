@@ -72,7 +72,9 @@
           "enableFrameProcessors": true
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "onnxruntime-react-native",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

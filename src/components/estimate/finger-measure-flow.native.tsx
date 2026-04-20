@@ -31,6 +31,7 @@ import {
   type FingerFrameSample,
   type FingerStressResult,
 } from "@/lib/finger-engine.native";
+import { preloadPpgOnnxSession } from "@/lib/ppg-stress-onnx";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
 const COLLECTION_MS = 15_000;
@@ -46,6 +47,11 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
 
   const samplesRef = useRef<FingerFrameSample[]>([]);
   const collectingSinceRef = useRef<number | null>(null);
+  /** Stops frame callbacks from appending samples immediately when analysis starts (avoids races before React re-renders `phase`). */
+  const collectionActiveRef = useRef(false);
+  /** Prevents duplicate concurrent runs when the 15s timer and extra frames both call `stopAndAnalyze`. */
+  const analysisInFlightRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const [phase, setPhase] = useState<"idle" | "collecting" | "processing">("idle");
   const [progress, setProgress] = useState(0);
@@ -72,31 +78,65 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
     return () => clearTimeout(t);
   }, [device, devices.length, hasHandledUnavailableCamera, hasPermission, onBack]);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  /** Load ONNX weights once the camera stack is ready so analysis doesn’t pay cold-start on first capture. */
+  useEffect(() => {
+    if (!hasPermission || !device) return;
+    void preloadPpgOnnxSession();
+  }, [hasPermission, device]);
+
   const stopAndAnalyze = useCallback(() => {
     if (phase !== "collecting") return;
-    setPhase("processing");
+    if (analysisInFlightRef.current) return;
+
     const startedAt = collectingSinceRef.current ?? Date.now();
     const duration = Math.max(0, Date.now() - startedAt);
-    const outcome = runFingerPPGEstimation(samplesRef.current, duration);
-    if (!outcome.ok) {
-      setError(toErrorCopy(outcome.error));
-      setResult(null);
-      setPhase("idle");
-      setProgress(0);
-      return;
-    }
-    setResult(outcome);
-    setError(null);
-    setPhase("idle");
-    setProgress(0);
-    setModalOpen(true);
+
+    analysisInFlightRef.current = true;
+    collectionActiveRef.current = false;
+    collectingSinceRef.current = null;
+    setPhase("processing");
+
+    void (async () => {
+      try {
+        const snapshot = samplesRef.current;
+        const outcome = await runFingerPPGEstimation(snapshot, duration);
+        if (!mountedRef.current) return;
+        if (!outcome.ok) {
+          setError(toErrorCopy(outcome.error));
+          setResult(null);
+          setPhase("idle");
+          setProgress(0);
+          return;
+        }
+        setResult(outcome);
+        setError(null);
+        setPhase("idle");
+        setProgress(0);
+        setModalOpen(true);
+      } catch (e) {
+        if (!mountedRef.current) return;
+        setError(e instanceof Error ? e.message : "Could not analyze finger signal.");
+        setResult(null);
+        setPhase("idle");
+        setProgress(0);
+      } finally {
+        analysisInFlightRef.current = false;
+      }
+    })();
   }, [phase]);
 
   const onFrameSample = useCallback(
     (sample: FingerFrameSample) => {
       const fingerDetected = isFingerDetected(sample);
       setLastFingerDetected(fingerDetected);
-      if (phase !== "collecting") return;
+      if (!collectionActiveRef.current) return;
       const sampleWithTime: FingerFrameSample = { ...sample, timestampMs: Date.now() };
       samplesRef.current.push(sampleWithTime);
 
@@ -109,7 +149,7 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
         stopAndAnalyze();
       }
     },
-    [phase, stopAndAnalyze],
+    [stopAndAnalyze],
   );
 
   const onFrameSampleWorklet = useMemo(
@@ -166,8 +206,10 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
       setError("Cover the camera lens and flash fully with your finger before starting.");
       return;
     }
+    if (analysisInFlightRef.current) return;
     samplesRef.current = [];
     collectingSinceRef.current = Date.now();
+    collectionActiveRef.current = true;
     setProgress(0);
     setError(null);
     setPhase("collecting");
@@ -267,7 +309,7 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
           {phase === "processing" ? (
             <View style={styles.analyzingRow}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={styles.muted}>Processing HRV…</Text>
+              <Text style={styles.muted}>Processing pulse signal…</Text>
             </View>
           ) : (
             <>
@@ -307,10 +349,14 @@ function FingerMeasureFlowNative({ onBack }: { onBack: () => void }) {
             {result ? (
               <>
                 <Text style={styles.modalScore}>{result.stressScore}</Text>
-                <Text style={styles.modalBand}>{bandLabel(result.stressBand)}</Text>
+                <Text style={styles.modalBand}>
+                  {bandLabel(result.stressBand)} · 0–100 index
+                </Text>
                 <Text style={styles.modalNote}>
-                  Engine: finger PPG. BPM: {result.bpm}. RMSSD: {result.rmssd} ms. Confidence:{" "}
-                  {result.confidence}%.
+                  {result.stressEngine === "finger-ppg-onnx"
+                    ? "Stress score from bundled ONNX MLP on PPG features (see assets/models). "
+                    : "Stress score from RMSSD formula fallback (ONNX unavailable). "}
+                  BPM: {result.bpm}. RMSSD: {result.rmssd} ms. Confidence: {result.confidence}%.
                 </Text>
               </>
             ) : null}

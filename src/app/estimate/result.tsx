@@ -95,20 +95,31 @@ export default function EstimateResultScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.body}>
         {score !== null && !Number.isNaN(score) ? (
-          <Text style={styles.score} accessibilityRole="text">
-            {score}
-          </Text>
+          <View style={{ gap: 4 }}>
+            <Text style={styles.score} accessibilityRole="text">
+              {score}
+            </Text>
+            <Text style={styles.muted}>0–100 index (higher = more acute load)</Text>
+          </View>
         ) : null}
         <Text style={styles.band}>
           Stress signal: {band.charAt(0).toUpperCase() + band.slice(1)}
         </Text>
         <Text style={styles.lead}>
-          This score is a <Text style={{ fontWeight: "700" }}>placeholder</Text>{" "}
-          {p.mode === "camera"
-            ? "until on-device MobileNetV2 + MediaPipe are fully wired per the stress plan."
-            : "until speech-to-text and models run on Supabase per §6.1."}{" "}
-          Mode: {p.mode ?? "—"}.
-          {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
+          {p.mode === "camera" || p.mode === "fingerprint" ? (
+            <>
+              Score is on a <Text style={{ fontWeight: "700" }}>0–100</Text> index (higher suggests
+              more acute load). It is a wellness-oriented estimate from on-device signals — not a
+              clinical diagnosis. Mode: {p.mode}.
+              {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
+            </>
+          ) : (
+            <>
+              This score is a <Text style={{ fontWeight: "700" }}>placeholder</Text> until
+              speech-to-text and models run per your deployment plan. Mode: {p.mode ?? "—"}.
+              {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
+            </>
+          )}
         </Text>
 
         {p.transcript ? (
