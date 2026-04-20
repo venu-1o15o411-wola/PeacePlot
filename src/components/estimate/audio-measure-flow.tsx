@@ -13,6 +13,7 @@ import {
 } from "expo-audio";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Platform,
@@ -22,6 +23,7 @@ import {
   Text,
   View,
 } from "react-native";
+import * as SpeechTranscriber from "expo-speech-transcriber";
 import Animated, {
   cancelAnimation,
   Easing,
@@ -34,12 +36,25 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Circle, G } from "react-native-svg";
 
+import { getGeminiWellnessAnalysis, isGeminiConfigured } from "@/lib/gemini-voice";
 import { mockVoiceEstimationFromDuration } from "@/lib/mock-voice-estimation";
+import { setVoiceEstimateSession } from "@/lib/voice-estimate-session";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 const MAX_RECORDING_SEC = 120;
 const WAVE_BARS = 24;
+
+/** iOS: `expo-speech-transcriber` file API — prefers SFSpeechRecognizer, falls back to SpeechAnalyzer when available. */
+async function transcribeIosRecording(uri: string): Promise<string> {
+  const primary = await SpeechTranscriber.transcribeAudioWithSFRecognizer(uri);
+  if (primary.trim()) return primary.trim();
+  if (SpeechTranscriber.isAnalyzerAvailable()) {
+    const second = await SpeechTranscriber.transcribeAudioWithAnalyzer(uri);
+    if (second.trim()) return second.trim();
+  }
+  throw new Error("Transcription returned empty text.");
+}
 const PROGRESS_RING_SIZE = 200;
 const PROGRESS_STROKE = 6;
 
@@ -446,6 +461,7 @@ function AudioMeasureFlowNative({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
   const [durationSec, setDurationSec] = useState(0);
+  const [isSubmittingNext, setIsSubmittingNext] = useState(false);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const stoppingRef = useRef(false);
@@ -586,25 +602,75 @@ function AudioMeasureFlowNative({ onBack }: { onBack: () => void }) {
     await safeRecorderReset();
   }, [safeRecorderReset]);
 
-  const continueToGating = () => {
+  const continueToGating = useCallback(async () => {
     if (durationSec < 2) {
       setError("Record a little longer so we can estimate stress from your voice.");
       return;
     }
     setError(null);
-    const est = mockVoiceEstimationFromDuration(durationSec);
-    const q: Record<string, string> = {
-      mode: "audio",
-      stressBand: est.stressBand,
-      stressScore: String(est.stressScore100),
-      transcript: est.transcriptPreview.slice(0, 500),
-      durationSec: String(Math.round(durationSec)),
-    };
-    router.push({
-      pathname: "/estimate/dataset-types",
-      params: q,
-    } as Href);
-  };
+    setIsSubmittingNext(true);
+    try {
+      const est = mockVoiceEstimationFromDuration(durationSec);
+      let transcript = est.transcriptPreview;
+      let transcribeNote = "";
+
+      try {
+        if (recordingUri) {
+          const sp = await SpeechTranscriber.requestPermissions();
+          if (sp !== "authorized") {
+            transcribeNote = "Speech recognition permission denied—using placeholder text.";
+          } else if (Platform.OS === "ios") {
+            transcript = await transcribeIosRecording(recordingUri);
+          } else {
+            transcribeNote =
+              "File transcription is currently implemented for iOS in this flow; using placeholder text on this device.";
+          }
+        } else {
+          transcribeNote = "No recording URI available; using placeholder text.";
+        }
+      } catch (e) {
+        transcribeNote = e instanceof Error ? e.message : "Transcription failed.";
+        transcript = est.transcriptPreview;
+      }
+
+      let guidance = "";
+      if (isGeminiConfigured()) {
+        try {
+          guidance = await getGeminiWellnessAnalysis({
+            transcript,
+            stressBand: est.stressBand,
+            stressScore100: est.stressScore100,
+          });
+          if (transcribeNote) {
+            guidance = `${transcribeNote}\n\n${guidance}`;
+          }
+        } catch (e) {
+          guidance = transcribeNote
+            ? `${transcribeNote}\n\n${e instanceof Error ? e.message : "Gemini unavailable."}`
+            : e instanceof Error
+              ? e.message
+              : "Gemini unavailable.";
+        }
+      } else if (transcribeNote) {
+        guidance = transcribeNote;
+      }
+
+      setVoiceEstimateSession({ transcript, guidance });
+
+      router.push({
+        pathname: "/estimate/dataset-types",
+        params: {
+          mode: "audio",
+          stressBand: est.stressBand,
+          stressScore: String(est.stressScore100),
+          transcript: transcript.slice(0, 500),
+          durationSec: String(Math.round(durationSec)),
+        },
+      } as Href);
+    } finally {
+      setIsSubmittingNext(false);
+    }
+  }, [durationSec, recordingUri, router]);
 
   const micAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: micScale.value }],
@@ -733,14 +799,24 @@ function AudioMeasureFlowNative({ onBack }: { onBack: () => void }) {
           {recordingUri ? (
             <PlaybackPreview uri={recordingUri} colors={colors} styles={styles} />
           ) : null}
+          {!isGeminiConfigured() ? (
+            <Text style={styles.muted}>
+              Add EXPO_PUBLIC_GEMINI_API_KEY for AI reflection on your words (optional).
+            </Text>
+          ) : null}
           <View style={{ gap: 10, marginTop: 4 }}>
             <Pressable
-              style={styles.primaryBtn}
-              onPress={continueToGating}
+              style={[styles.primaryBtn, isSubmittingNext && { opacity: 0.75 }]}
+              onPress={() => void continueToGating()}
+              disabled={isSubmittingNext}
               accessibilityRole="button"
               accessibilityLabel="Next step, dataset types"
             >
-              <Text style={styles.primaryBtnText}>Next step</Text>
+              {isSubmittingNext ? (
+                <ActivityIndicator color={colors.textOnPrimary} />
+              ) : (
+                <Text style={styles.primaryBtnText}>Next step</Text>
+              )}
             </Pressable>
             <Pressable
               style={styles.secondaryBtn}
