@@ -1,26 +1,33 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { Image } from "expo-image";
 import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
-  DISCOVER_CHIPS,
-  DISCOVER_ITEMS,
-  type DiscoverChipId,
-  type DiscoverItem,
-  type DiscoverModality,
-  modalityMatchesChip,
+    DISCOVER_CHIPS,
+    type DiscoverChipId,
+    type DiscoverModality,
 } from "@/data/discover-mock";
+import {
+    clearSuppressedDiscoverItemIds,
+    fetchDiscoverFeatured,
+    fetchDiscoverFeed,
+    getSuppressedDiscoverItemIds,
+    warmDiscoverCache,
+    type DiscoverRemoteItem,
+} from "@/lib/discover-feed";
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 function modalityIcon(
   m: DiscoverModality,
@@ -82,6 +89,34 @@ function createStyles(c: PeacePlotPalette) {
       fontSize: 16,
       color: c.text,
       paddingVertical: 8,
+    },
+    hiddenToolsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingBottom: 10,
+    },
+    hiddenBtn: {
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    hiddenBtnActive: {
+      borderColor: c.primary,
+      backgroundColor: c.surfaceDeep,
+    },
+    hiddenBtnText: {
+      color: c.text,
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    hiddenMeta: {
+      color: c.textMuted,
+      fontSize: 12,
     },
     chipScroll: {
       marginBottom: 16,
@@ -213,6 +248,20 @@ function createStyles(c: PeacePlotPalette) {
       color: c.primary,
       letterSpacing: 0.4,
     },
+    hiddenBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: "rgba(244, 67, 54, 0.15)",
+      borderWidth: 1,
+      borderColor: "rgba(244, 67, 54, 0.35)",
+    },
+    hiddenBadgeText: {
+      fontSize: 10,
+      fontWeight: "800",
+      color: "#f87171",
+      letterSpacing: 0.4,
+    },
     listContent: {
       paddingBottom: 120,
     },
@@ -235,7 +284,7 @@ function FeaturedCard({
   styles,
   onPress,
 }: {
-  item: DiscoverItem;
+  item: DiscoverRemoteItem;
   colors: PeacePlotPalette;
   styles: ReturnType<typeof createStyles>;
   onPress: () => void;
@@ -252,7 +301,15 @@ function FeaturedCard({
       accessibilityLabel={`${item.title}, ${item.duration}`}
     >
       <View style={styles.featuredVisual}>
-        <Ionicons name={icon} size={40} color={colors.primary} />
+        {item.thumbUrl ? (
+          <Image
+            source={{ uri: item.thumbUrl }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+          />
+        ) : (
+          <Ionicons name={icon} size={40} color={colors.primary} />
+        )}
       </View>
       <View style={styles.featuredBody}>
         <Text style={styles.featuredTitle} numberOfLines={2}>
@@ -271,11 +328,13 @@ function DiscoverRow({
   colors,
   styles,
   onPress,
+  isHidden,
 }: {
-  item: DiscoverItem;
+  item: DiscoverRemoteItem;
   colors: PeacePlotPalette;
   styles: ReturnType<typeof createStyles>;
   onPress: () => void;
+  isHidden: boolean;
 }) {
   const icon = modalityIcon(item.modality);
   return (
@@ -286,7 +345,15 @@ function DiscoverRow({
       accessibilityLabel={`${item.title}. ${item.subtitle}`}
     >
       <View style={styles.thumb}>
-        <Ionicons name={icon} size={28} color={colors.primary} />
+        {item.thumbUrl ? (
+          <Image
+            source={{ uri: item.thumbUrl }}
+            style={{ width: "100%", height: "100%", borderRadius: 10 }}
+            contentFit="cover"
+          />
+        ) : (
+          <Ionicons name={icon} size={28} color={colors.primary} />
+        )}
       </View>
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle} numberOfLines={2}>
@@ -307,6 +374,11 @@ function DiscoverRow({
           {item.doctorBadge ? (
             <View style={styles.doctorBadge}>
               <Text style={styles.doctorBadgeText}>TRUSTED PICK</Text>
+            </View>
+          ) : null}
+          {isHidden ? (
+            <View style={styles.hiddenBadge}>
+              <Text style={styles.hiddenBadgeText}>HIDDEN</Text>
             </View>
           ) : null}
         </View>
@@ -330,42 +402,161 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [query, setQuery] = useState("");
   const [chip, setChip] = useState<DiscoverChipId>("all");
+  const [featured, setFeatured] = useState<DiscoverRemoteItem[]>([]);
+  const [listData, setListData] = useState<DiscoverRemoteItem[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [loadingList, setLoadingList] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextPage, setNextPage] = useState<number | null>(2);
+  const [error, setError] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+  const [hiddenCount, setHiddenCount] = useState(0);
+  const [suppressedIds, setSuppressedIds] = useState<Set<string>>(new Set());
 
-  const featured = useMemo(
-    () => DISCOVER_ITEMS.filter((x) => x.featured).slice(0, 6),
-    [],
+  const preferProviderItems = React.useCallback(
+    (items: DiscoverRemoteItem[]): DiscoverRemoteItem[] => {
+      if (chip === "ai") return items;
+      const real = items.filter((x) => x.source !== "seed");
+      // Music must be provider-only (no synthetic "loop" fallback).
+      if (chip === "music") return real;
+      // Keep infinite list alive: prefer provider, but fallback to seed when provider is empty.
+      return real.length > 0 ? real : items;
+    },
+    [chip],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return DISCOVER_ITEMS.filter((item) => {
-      if (!modalityMatchesChip(item.modality, chip)) return false;
-      if (!q) return true;
-      const blob = `${item.title} ${item.subtitle}`.toLowerCase();
-      return blob.includes(q);
-    });
-  }, [query, chip]);
+  React.useEffect(() => {
+    let active = true;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+    setLoadingFeatured(true);
+    void fetchDiscoverFeatured(tz)
+      .then((items) => {
+        if (!active) return;
+        setFeatured(items.slice(0, 5));
+      })
+      .catch(() => {
+        if (!active) return;
+        setError("Could not load featured right now.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoadingFeatured(false);
+        // Best-effort background warm-up so later category opens are faster.
+        void warmDiscoverCache({ category: "all", page: 1 });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  
-  const listData = useMemo(() => {
-    const q = query.trim();
-    if (q) return filtered;
-    return filtered.filter((item) => !item.featured);
-  }, [filtered, query]);
+  const refreshHiddenCount = React.useCallback(async () => {
+    const suppressed = await getSuppressedDiscoverItemIds();
+    setSuppressedIds(suppressed);
+    setHiddenCount(suppressed.size);
+  }, []);
 
-  const openItem = (id: string) => {
-    router.push(`/(drawer)/(tabs)/discover/item/${id}` as Href);
+  React.useEffect(() => {
+    void refreshHiddenCount();
+  }, [refreshHiddenCount, chip, query, showHidden]);
+
+  React.useEffect(() => {
+    let active = true;
+    const handle = setTimeout(() => {
+      setLoadingList(true);
+      setError(null);
+      void fetchDiscoverFeed({
+        category: chip,
+        query,
+        page: 1,
+        pageSize: 15,
+      })
+        .then(async (res) => {
+          if (!active) return;
+          const suppressed = await getSuppressedDiscoverItemIds();
+          const seen = new Set<string>();
+          const preferred = preferProviderItems(res.items);
+          const deduped = preferred.filter((x) => {
+            if (!showHidden && suppressed.has(x.id)) return false;
+            if (seen.has(x.id)) return false;
+            seen.add(x.id);
+            return true;
+          });
+          setListData(deduped);
+          if (chip === "music" && deduped.length === 0) {
+            setError(
+              "No suitable provider music is available now. Pull to refresh or try again shortly.",
+            );
+          }
+          setHasMore(res.hasMore);
+          setNextPage(res.nextPage ?? null);
+        })
+        .catch((e) => {
+          if (!active) return;
+          setError(e instanceof Error ? e.message : "Could not load library.");
+          setListData([]);
+          setHasMore(false);
+          setNextPage(null);
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoadingList(false);
+        });
+    }, 220);
+    return () => {
+      active = false;
+      clearTimeout(handle);
+    };
+  }, [chip, query, showHidden, preferProviderItems]);
+
+  const openItem = (item: DiscoverRemoteItem) => {
+    router.push({
+      pathname: "/(drawer)/(tabs)/discover/item/[id]",
+      params: {
+        id: item.id,
+        payload: encodeURIComponent(JSON.stringify(item)),
+      },
+    } as Href);
+  };
+
+  const loadMore = () => {
+    if (!hasMore || loadingMore || loadingList || nextPage == null) {
+      return;
+    }
+    setLoadingMore(true);
+    void fetchDiscoverFeed({
+      category: chip,
+      query,
+      page: nextPage,
+      pageSize: 15,
+    })
+      .then(async (res) => {
+        const suppressed = await getSuppressedDiscoverItemIds();
+        const preferred = preferProviderItems(res.items);
+        setListData((prev) => {
+          const seen = new Set(prev.map((x) => x.id));
+          const merged = [...prev];
+          for (const item of preferred) {
+            if (!showHidden && suppressed.has(item.id)) continue;
+            if (!seen.has(item.id)) {
+              seen.add(item.id);
+              merged.push(item);
+            }
+          }
+          return merged;
+        });
+        setHasMore(res.hasMore);
+        setNextPage(res.nextPage ?? null);
+      })
+      .finally(() => {
+        setLoadingMore(false);
+      });
   };
 
   const header = (
     <View>
       <View style={styles.intro}>
         <Text style={styles.introTitle}>Discover</Text>
-        <Text style={styles.introSub}>
-          Books, media, music, movement, places, and AI guidance — each item
-          shows duration and format so you can choose calmly, not scroll
-          blindly.
-        </Text>
       </View>
 
       <View style={styles.searchWrap}>
@@ -385,6 +576,31 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
           autoCapitalize="none"
           accessibilityLabel="Search library"
         />
+      </View>
+      <View style={styles.hiddenToolsRow}>
+        <Pressable
+          style={[styles.hiddenBtn, showHidden && styles.hiddenBtnActive]}
+          onPress={() => setShowHidden((v) => !v)}
+          accessibilityRole="button"
+          accessibilityLabel="Toggle showing hidden discover items"
+        >
+          <Text style={styles.hiddenBtnText}>
+            {showHidden ? "Hide hidden items" : "Show hidden items"}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={styles.hiddenBtn}
+          onPress={async () => {
+            await clearSuppressedDiscoverItemIds();
+            await refreshHiddenCount();
+            setShowHidden(false);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Clear hidden discover items"
+        >
+          <Text style={styles.hiddenBtnText}>Clear hidden</Text>
+        </Pressable>
+        <Text style={styles.hiddenMeta}>{hiddenCount} hidden</Text>
       </View>
 
       <ScrollView
@@ -415,51 +631,78 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
       </ScrollView>
 
       <Text style={styles.sectionLabel}>FEATURED</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingLeft: 16,
-          paddingRight: 8,
-          paddingBottom: 16,
-        }}
-      >
-        {featured.map((item) => (
-          <FeaturedCard
-            key={item.id}
-            item={item}
-            colors={colors}
-            styles={styles}
-            onPress={() => openItem(item.id)}
-          />
-        ))}
-      </ScrollView>
+      {loadingFeatured ? (
+        <View style={{ alignItems: "center", paddingVertical: 20 }}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingLeft: 16,
+            paddingRight: 8,
+            paddingBottom: 16,
+          }}
+        >
+          {featured.map((item) => (
+            <FeaturedCard
+              key={item.id}
+              item={item}
+              colors={colors}
+              styles={styles}
+              onPress={() => openItem(item)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       <Text style={styles.sectionLabel}>LIBRARY</Text>
+      {loadingList ? (
+        <View style={{ alignItems: "center", paddingVertical: 16 }}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : null}
+      {error ? (
+        <Text style={[styles.emptyText, { paddingHorizontal: 20, paddingBottom: 10 }]}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 
   return (
     <FlatList
-      data={listData}
+      data={loadingList ? [] : listData}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={header}
+      onEndReachedThreshold={0.45}
+      onEndReached={loadMore}
       ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>
-            Nothing matches this filter yet. Try All or another category —
-            library data will connect to Supabase per the product plan.
-          </Text>
-        </View>
+        loadingList ? null : (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>
+              Nothing matches this filter yet. Try another category or search term.
+            </Text>
+          </View>
+        )
       }
       renderItem={({ item }) => (
         <DiscoverRow
           item={item}
           colors={colors}
           styles={styles}
-          onPress={() => openItem(item.id)}
+          onPress={() => openItem(item)}
+          isHidden={showHidden && suppressedIds.has(item.id)}
         />
       )}
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 14 }}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : null
+      }
       contentContainerStyle={styles.listContent}
       showsVerticalScrollIndicator={false}
     />

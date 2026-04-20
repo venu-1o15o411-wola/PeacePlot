@@ -9,3 +9,7 @@
 [functions.question-checkin]
 verify_jwt = false
 entrypoint = "./functions/checkin-chat/index.ts"
+
+[functions.discover-feed]
+verify_jwt = false
+entrypoint = "./functions/discover-feed/index.ts"

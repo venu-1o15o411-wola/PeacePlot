@@ -1,7 +1,6 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import type { Href } from "expo-router";
 import { Link, Redirect, router, Stack } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -188,7 +187,6 @@ export default function SigninScreen() {
     setSubmitting(true);
     try {
       await signInWithPassword(trimmed, password);
-      router.replace("/(drawer)/(tabs)" as Href);
     } catch (e) {
       Alert.alert(
         "Sign in failed",
