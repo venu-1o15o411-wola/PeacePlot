@@ -168,7 +168,6 @@ export default function SignupScreen() {
         email: em,
         password,
       });
-      router.replace("/(drawer)/(tabs)");
     } catch (e) {
       Alert.alert(
         "Sign up failed",

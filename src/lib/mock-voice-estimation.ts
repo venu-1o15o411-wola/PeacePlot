@@ -1,3 +1,5 @@
+import { clampStressScore0to100, stressBandFromScore0to100 } from "@/lib/stress-score-common";
+
 /**
  * Placeholder stress signal until speech-to-text + model run on Supabase Edge Functions
  * (`plan.md` §6.1). Uses only local metadata (duration)—no audio leaves the device here.
@@ -21,12 +23,9 @@ export function mockVoiceEstimationFromDuration(durationSec: number): VoiceEstim
   }
 
   const t = Math.min(1, durationSec / 90);
-  const score = Math.round(28 + t * 52 + (durationSec % 7) * 3);
-  const stressScore100 = Math.min(95, Math.max(18, score));
-
-  let stressBand: VoiceEstimationResult["stressBand"] = "moderate";
-  if (stressScore100 < 40) stressBand = "low";
-  else if (stressScore100 > 72) stressBand = "elevated";
+  const score = Math.round(15 + t * 70 + (durationSec % 11) * 2);
+  const stressScore100 = clampStressScore0to100(score);
+  const stressBand = stressBandFromScore0to100(stressScore100);
 
   return {
     transcriptPreview:

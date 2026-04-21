@@ -3,7 +3,7 @@
     "name": "PeacePlot",
     "slug": "PeacePlot",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/app/icon.png",
     "scheme": "peaceplot",
     "userInterfaceStyle": "dark",
@@ -78,7 +78,9 @@
           "speechRecognitionPermission": "PeacePlot uses on-device speech recognition only to turn your short voice check-in into text for stress estimation—not for background listening.",
           "microphonePermission": "PeacePlot uses the microphone only to record short voice samples for stress check-ins—not for music or background listening."
         }
-      ]
+      ],
+      "onnxruntime-react-native",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

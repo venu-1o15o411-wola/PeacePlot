@@ -1,4 +1,6 @@
-import { estimateStressFromPPG } from "@/lib/stress-from-finger";
+import { extractPpgStressFeatures } from "@/lib/ppg-stress-features";
+import { predictStressScoreWithPpgOnnx } from "@/lib/ppg-stress-onnx";
+import { estimateStressFromPPG, stressBandFromScore100 } from "@/lib/stress-from-finger";
 
 export type FingerSignalError = "NO_FINGER" | "LOW_SIGNAL" | "TOO_SHORT";
 
@@ -15,7 +17,8 @@ export type FingerStressSuccess = {
   stressScore: number;
   stressBand: "low" | "moderate" | "elevated";
   confidence: number;
-  stressEngine: "finger-ppg";
+  /** ONNX MLP when inference succeeds; RMSSD formula fallback if the model cannot run. */
+  stressEngine: "finger-ppg-onnx" | "finger-ppg";
   bpm: number;
   rmssd: number;
 };
@@ -127,10 +130,10 @@ function signalQuality(signal: number[], peaks: number[]): number {
   return Math.round((ampScore * 0.65 + densityScore * 0.35) * 100);
 }
 
-export function runFingerPPGEstimation(
+export async function runFingerPPGEstimation(
   samples: FingerFrameSample[],
   durationMs: number,
-): FingerStressResult {
+): Promise<FingerStressResult> {
   if (durationMs < MIN_DURATION_MS || samples.length < MIN_SAMPLES) {
     return { ok: false, error: "TOO_SHORT" };
   }
@@ -158,18 +161,39 @@ export function runFingerPPGEstimation(
     return { ok: false, error: "LOW_SIGNAL" };
   }
 
-  const { score, band } = estimateStressFromPPG(rmssd);
   const confidence = signalQuality(signal, peaks);
   if (confidence < 20) {
     return { ok: false, error: "LOW_SIGNAL" };
   }
 
+  const features = extractPpgStressFeatures({
+    samples,
+    signal,
+    peakIndices: peaks,
+    durationMs,
+    bpm,
+    rmssd,
+  });
+
+  let stressScore: number;
+  let stressEngine: FingerStressSuccess["stressEngine"];
+  try {
+    stressScore = await predictStressScoreWithPpgOnnx(features);
+    stressEngine = "finger-ppg-onnx";
+  } catch {
+    const { score } = estimateStressFromPPG(rmssd);
+    stressScore = score;
+    stressEngine = "finger-ppg";
+  }
+
+  const stressBand = stressBandFromScore100(stressScore);
+
   return {
     ok: true,
-    stressScore: score,
-    stressBand: band,
+    stressScore,
+    stressBand,
     confidence,
-    stressEngine: "finger-ppg",
+    stressEngine,
     bpm: Math.round(bpm),
     rmssd: Number(rmssd.toFixed(1)),
   };

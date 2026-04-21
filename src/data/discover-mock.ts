@@ -3,7 +3,8 @@
 export type DiscoverChipId =
   | "all"
   | "books"
-  | "media"
+  | "video"
+  | "image"
   | "music"
   | "movement"
   | "places"
@@ -32,7 +33,8 @@ export type DiscoverItem = {
 export const DISCOVER_CHIPS: { id: DiscoverChipId; label: string }[] = [
   { id: "all", label: "All" },
   { id: "books", label: "Books" },
-  { id: "media", label: "Media" },
+  { id: "video", label: "Video" },
+  { id: "image", label: "Images" },
   { id: "music", label: "Music" },
   { id: "movement", label: "Yoga & Tai Chi" },
   { id: "places", label: "Places" },
@@ -139,8 +141,9 @@ export function modalityMatchesChip(
 ): boolean {
   if (chip === "all") return true;
   if (chip === "books") return modality === "book";
-  if (chip === "media")
+  if (chip === "video")
     return modality === "video" || modality === "story";
+  if (chip === "image") return modality === "place";
   if (chip === "music") return modality === "music";
   if (chip === "movement")
     return modality === "yoga" || modality === "tai-chi";
