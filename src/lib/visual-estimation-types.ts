@@ -1,9 +1,15 @@
 export type VisualEstimationResult = {
   stressBand: "low" | "moderate" | "elevated";
+  /** 0 = calm / low load, 100 = high acute stress index (wellness framing — not a diagnosis). */
   stressScore100: number;
 };
 
-export type StressEngineKind = "mediapipe" | "mlkit" | "finger-ppg" | "demo";
+export type StressEngineKind =
+  | "mediapipe"
+  | "mlkit"
+  | "finger-ppg"
+  | "finger-ppg-onnx"
+  | "demo";
 
 export type VisualPipelineSuccess = {
   kind: "success";

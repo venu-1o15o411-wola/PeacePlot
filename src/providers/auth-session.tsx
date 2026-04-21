@@ -34,6 +34,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshSession = useCallback(async (): Promise<Session | null> => {
+    const client = supabase;
+    if (!client) return null;
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+      throw new Error(formatAuthError(error));
+    }
+    return data.session ?? null;
+  }, []);
+
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
@@ -41,14 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
-    const watchdog = setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 5000);
-
-    supabase.auth
-      .getSession()
-      .then(({ data: { session: next } }) => {
-        if (!cancelled) setSession(next);
+    refreshSession()
+      .then((next) => {
+        if (!cancelled) setSession(next ?? null);
       })
       .catch(() => {
         // Keep app usable even if auth bootstrap fails.
@@ -65,10 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
-      clearTimeout(watchdog);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [refreshSession]);
 
   const signInWithPassword = useCallback(async (email: string, password: string) => {
     const client = supabase;
@@ -77,12 +81,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.",
       );
     }
-    const { error } = await client.auth.signInWithPassword({
+    const { data, error } = await client.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
     if (error) throw new Error(formatAuthError(error));
-  }, []);
+    const next = data.session ?? (await refreshSession());
+    if (!next) {
+      throw new Error("Signed in, but no session is available. Please try again.");
+    }
+    setSession(next);
+  }, [refreshSession]);
 
   const isUseridAvailable = useCallback(async (userid: string): Promise<boolean | null> => {
     const client = supabase;
@@ -149,13 +158,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw new Error(formatAuthError(error));
 
-      if (!data.session) {
+      if (data.session) {
+        setSession(data.session);
+        return;
+      }
+
+      // If sign-up succeeded but returned no session, try explicit sign-in.
+      const { data: signinData, error: signinErr } = await client.auth.signInWithPassword({
+        email,
+        password: params.password,
+      });
+      if (signinErr) {
         throw new Error(
-          "Sign-up did not return a session. In Supabase Dashboard → Authentication → Providers → Email, disable “Confirm email” / email confirmation so new accounts can sign in immediately.",
+          "Account created but no active session was issued. Confirm email may still be required in Supabase Auth settings.",
         );
       }
+      const next = signinData.session ?? (await refreshSession());
+      if (!next) {
+        throw new Error("Account created, but session bootstrap failed. Please sign in again.");
+      }
+      setSession(next);
     },
-    [isUseridAvailable],
+    [isUseridAvailable, refreshSession],
   );
 
   const signOut = useCallback(async () => {

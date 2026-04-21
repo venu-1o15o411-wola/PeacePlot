@@ -1,22 +1,18 @@
+import {
+  clampStressScore0to100,
+  stressBandFromScore0to100,
+} from "@/lib/stress-score-common";
 import type { VisualEstimationResult } from "@/lib/visual-estimation-types";
 
-function clampScore(n: number): number {
-  return Math.min(95, Math.max(15, Math.round(n)));
-}
-
-function toBand(score: number): VisualEstimationResult["stressBand"] {
-  if (score < 40) return "low";
-  if (score > 72) return "elevated";
-  return "moderate";
-}
+export { stressBandFromScore0to100 as stressBandFromScore100 };
 
 export function estimateStressFromPPG(rmssd: number): {
   score: number;
   band: VisualEstimationResult["stressBand"];
 } {
   const bounded = Math.max(5, Math.min(120, rmssd));
-  // Lower RMSSD is correlated with higher acute stress; map inversely.
-  const normalized = 100 - ((bounded - 5) / 115) * 100;
-  const score = clampScore(normalized);
-  return { score, band: toBand(score) };
+  // Lower RMSSD → higher stress index (0–100). Linear across plausible PPG range.
+  const linear = 100 - ((bounded - 5) / 115) * 100;
+  const score = clampStressScore0to100(linear);
+  return { score, band: stressBandFromScore0to100(score) };
 }

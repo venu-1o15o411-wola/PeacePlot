@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { FaceLandmarkerWebView } from "@/components/estimate/face-landmarker-webview";
 import type { StressEngineKind, VisualEstimationResult } from "@/lib/visual-estimation-types";
 import { processPhotoForStress } from "@/lib/visual-stress-pipeline";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
@@ -152,6 +153,9 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [lastResult, setLastResult] = useState<VisualEstimationResult | null>(null);
   const [lastEngine, setLastEngine] = useState<StressEngineKind | null>(null);
+  /** Native: MediaPipe WASM runs inside WebView; wait for init before capture. */
+  const [faceEngineReady, setFaceEngineReady] = useState(Platform.OS === "web");
+  const [faceEngineError, setFaceEngineError] = useState<string | null>(null);
 
   const openSettings = useCallback(() => {
     void Linking.openSettings();
@@ -199,6 +203,7 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
 
   const onShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || busy) return;
+    if (Platform.OS !== "web" && !faceEngineReady) return;
     setError(null);
     setBusy(true);
     try {
@@ -226,7 +231,7 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
     } finally {
       setBusy(false);
     }
-  }, [cameraReady, busy]);
+  }, [cameraReady, busy, faceEngineReady]);
 
   const closeModal = useCallback(() => {
     setModalOpen(false);
@@ -293,19 +298,48 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.root}>
+      {Platform.OS !== "web" ? (
+        <FaceLandmarkerWebView
+          onEngineReady={() => {
+            setFaceEngineError(null);
+            setFaceEngineReady(true);
+          }}
+          onEngineError={(message) => {
+            setFaceEngineError(message);
+            setFaceEngineReady(false);
+          }}
+        />
+      ) : null}
       <View style={styles.body}>
+        {faceEngineError && Platform.OS !== "web" ? (
+          <View style={[styles.demoBanner, { borderColor: "rgba(244, 67, 54, 0.45)" }]}>
+            <Text style={styles.demoBannerText}>
+              Face engine failed to load ({faceEngineError}). Check your network and try leaving this
+              screen and opening it again.
+            </Text>
+          </View>
+        ) : null}
+        {!faceEngineReady && Platform.OS !== "web" && !faceEngineError ? (
+          <View style={[styles.demoBanner, { backgroundColor: "rgba(33, 150, 243, 0.12)", borderColor: "rgba(33, 150, 243, 0.35)" }]}>
+            <Text style={styles.demoBannerText}>
+              Loading MediaPipe Face Landmarker in a secure web view (first open may take a few
+              seconds)…
+            </Text>
+          </View>
+        ) : null}
         {demoNotice ? (
           <View style={styles.demoBanner}>
             <Text style={styles.demoBannerText}>
-              Face detection isn’t available in this environment (e.g. Expo Go). Showing a demo
-              stress score so you can test the flow — use a development build for real face checks.
+              Face ML isn’t available in this environment (e.g. Expo Go without the face engine).
+              Showing a demo stress score so you can test the flow — use a development build with
+              network access for real face checks.
             </Text>
           </View>
         ) : Platform.OS === "web" ? (
           <View style={[styles.demoBanner, { backgroundColor: "rgba(33, 150, 243, 0.12)", borderColor: "rgba(33, 150, 243, 0.35)" }]}>
             <Text style={styles.demoBannerText}>
-              Web: stress estimate uses MediaPipe Face Landmarker (WASM) in your browser. Native apps
-              use Google ML Kit–class detection until MediaPipe is added there.
+              Web: stress estimate uses MediaPipe Face Landmarker (WASM) in your browser, then maps
+              blendshapes / geometry to a wellness score (not a clinical diagnosis).
             </Text>
           </View>
         ) : null}
@@ -348,8 +382,15 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
                 accessibilityRole="button"
                 accessibilityLabel="Take photo for stress check-in"
                 onPress={() => void onShutter()}
-                disabled={!cameraReady}
-                style={({ pressed }) => [{ opacity: pressed || !cameraReady ? 0.75 : 1 }]}
+                disabled={!cameraReady || (Platform.OS !== "web" && !faceEngineReady)}
+                style={({ pressed }) => [
+                  {
+                    opacity:
+                      pressed || !cameraReady || (Platform.OS !== "web" && !faceEngineReady)
+                        ? 0.75
+                        : 1,
+                  },
+                ]}
               >
                 <View style={styles.shutterOuter}>
                   <View style={styles.shutterInner} />
@@ -357,7 +398,11 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
               </Pressable>
             )}
             <Text style={styles.muted}>
-              {!cameraReady ? "Starting camera…" : "Tap to capture"}
+              {!cameraReady
+                ? "Starting camera…"
+                : Platform.OS !== "web" && !faceEngineReady
+                  ? "Loading face engine…"
+                  : "Tap to capture"}
             </Text>
           </View>
 
@@ -379,17 +424,19 @@ function VisualMeasureFlowNative({ onBack }: { onBack: () => void }) {
             {lastResult ? (
               <>
                 <Text style={styles.modalScore}>{lastResult.stressScore100}</Text>
-                <Text style={styles.modalBand}>{bandLabel(lastResult.stressBand)}</Text>
+                <Text style={styles.modalBand}>
+                  {bandLabel(lastResult.stressBand)} · 0–100 index
+                </Text>
                 <Text style={styles.modalNote}>
-                  Wellness-only estimate from this snapshot — not a diagnosis. Engine:{" "}
+                  Higher = more acute load in this snapshot. Wellness-only — not a diagnosis. Engine:{" "}
                   {lastEngine === "mediapipe"
-                    ? "MediaPipe Face Landmarker + heuristic stress mapping"
+                    ? "MediaPipe Face Landmarker (blendshapes + landmarks) + heuristic wellness mapping"
                     : lastEngine === "mlkit"
                       ? "Google ML face geometry + heuristic mapping"
                       : lastEngine === "demo"
-                        ? "Demo (no face ML)"
+                        ? "Demo (face engine unavailable)"
                         : "—"}
-                  . Add fine-tuned MobileNetV2 per assets/models when ready.
+                  . Optional: fine-tuned classifier per assets/models when ready.
                 </Text>
               </>
             ) : null}

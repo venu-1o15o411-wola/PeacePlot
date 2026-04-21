@@ -1,11 +1,11 @@
 # PeacePlot — Stress estimation plans (split by feature)
 
-**Status:** planning only — **no implementation yet**  
 **Companion:** [`plan.md`](./plan.md), [`research.md`](./research.md)
 
-This document is intentionally split into two fully separate plans:
-1. Face stress estimation plan
-2. Finger-PPG stress estimation plan
+This document splits plans into two areas:
+
+1. Face stress estimation (camera / selfie)
+2. Finger-PPG stress estimation (back camera + torch)
 
 ---
 
@@ -19,52 +19,49 @@ Deliver camera-based face stress estimation from a selfie flow with explicit fac
 
 1. User opens face check-in from Measure/Home.
 2. Front camera preview is shown.
-3. User taps capture.
-4. App validates that a face is detectable and sufficiently clear.
-5. If valid: app computes stress result.
+3. On **native**, a hidden WebView loads **MediaPipe Face Landmarker** (WASM + `face_landmarker.task`); capture stays disabled until the engine signals ready.
+4. User taps capture.
+5. App runs **Face Landmarker** on the still image (blendshapes + 468 landmarks), validates that a face is present, then maps signals to a wellness score/band.
 6. Result modal is shown.
 7. User continues to `/estimate/dataset-types` then `/estimate/result`.
 
-### 1.3 Technical architecture
+### 1.3 Technical architecture (implemented)
 
-- Entry flow component: existing camera estimation path (`estimate/[mode].tsx` + visual flow component).
-- Face pipeline:
-  - Capture still image.
-  - Validate face presence and quality.
-  - Extract features (landmarks/blendshapes and/or crop).
-  - Estimate stress score/band.
-- Output contract:
-  - `stressScore` clamped to 15-95.
-  - `stressBand` in `low | moderate | elevated`.
-  - `stressEngine` reflects actual runtime engine.
+| Layer | Implementation |
+|--------|----------------|
+| Capture | `expo-camera` `CameraView` (`visual-measure-flow.tsx`) |
+| Inference | **MediaPipe Face Landmarker** (`float16/1/face_landmarker.task`) via `@mediapipe/tasks-vision` |
+| **Web** | WASM runs in the browser; `face-engine.web.ts` + `mediapipe-face-landmarker-shared.ts` |
+| **iOS / Android** | Same JS API inside **`react-native-webview`**: Hermes has no `document`/canvas, so Tasks Vision cannot run on the JS thread; the WebView hosts the identical pipeline (`face-landmarker-webview.tsx` → `face-engine.native.ts`) |
+| Stress mapping | `estimateStressFromMediaPipe` / `estimateStressFromNormalizedLandmarks` in `stress-signals.ts` (heuristic wellness mapping, not a bundled “stress” classifier) |
 
-### 1.4 Engine/model notes
+### 1.4 Engine / model notes
 
-- Web can use MediaPipe Face Landmarker stack.
-- Native should progress to real inference stack (ML Kit/MediaPipe native + later MobileNetV2 where planned).
-- Demo fallback may exist temporarily, but must be explicit and never represented as real measurement.
+- **Model asset:** `face_landmarker.task` (Face Landmarker), loaded from Google Storage CDN (same as MediaPipe samples).
+- **WASM:** Served from `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@<version>/wasm` (WASM is part of the `tasks-vision` package; there is no separate `@mediapipe/tasks-wasm` npm package).
+- **Expo Go:** If the WebView bridge never registers, `face-engine.native.ts` falls back to **demo hash** scoring with `faceDetectionDemo: true` so flows remain testable.
+- **Optional later:** Train or calibrate a separate model on top of landmark/blendshape features; see `assets/models/README.md` if added.
 
 ### 1.5 Face-specific error handling
 
-- Face not detected.
-- Face detected but quality below minimum threshold.
-- Runtime/inference failure.
+- Face not detected → `VisualPipelineOutcome` `kind: "retry"` with user-facing copy (no fake success).
+- Face engine failed to load (network / WebView) → banner + capture disabled; user can retry after fixing connectivity.
+- Runtime inference failure → `retry` with message (or Expo Go demo fallback where applicable).
 
-No invalid face input should produce a normal success result.
+### 1.6 Engineering work items (face) — status
 
-### 1.6 Engineering work items (face)
-
-- Harden real native path and clearly gate demo behavior.
-- Ensure face output conforms to shared stress typing.
-- Keep UX aligned with PeacePlot style/accessibility.
-- Keep downstream routing unchanged.
+- [x] Native path uses real Face Landmarker output (not URI hash demo) in development builds with working WebView + network.
+- [x] Shared WASM URL corrected to `tasks-vision/.../wasm`.
+- [x] Heuristic mapping avoids image-dimension “noise” terms; scores derive from blendshapes/geometry only.
+- [ ] Optional: bundle `.task` + WASM as app assets for fully offline first open (larger binary).
+- [ ] Optional: replace or augment heuristics with a trained classifier.
 
 ### 1.7 Face success criteria
 
 - End-to-end flow works on supported devices without crashes.
-- Invalid face capture never emits false success.
-- Result UX and transitions are consistent with current estimate flows.
-- Output stays compatible with dataset gating and recommendation routes.
+- Invalid face capture never emits a misleading “real” success when the engine ran and found no face.
+- Native uses the same landmark model semantics as web (MediaPipe Tasks), differing only in host (browser vs WebView).
+- Output remains compatible with dataset gating and `/estimate/result`.
 
 ---
 
@@ -79,7 +76,12 @@ Deliver real on-device finger-based stress estimation using back camera + torch 
 Shared engine typing must include finger engine:
 
 ```ts
-export type StressEngineKind = "mediapipe" | "mlkit" | "finger-ppg" | "demo";
+export type StressEngineKind =
+  | "mediapipe"
+  | "mlkit"
+  | "finger-ppg"
+  | "finger-ppg-onnx"
+  | "demo";
 ```
 
 Required success shape for finger estimation:
@@ -90,9 +92,11 @@ Required success shape for finger estimation:
   stressScore: number,
   stressBand: "low" | "moderate" | "elevated",
   confidence: number,
-  stressEngine: "finger-ppg"
+  stressEngine: "finger-ppg-onnx" | "finger-ppg"
 }
 ```
+
+(`finger-ppg-onnx` = bundled ONNX MLP; `finger-ppg` = RMSSD formula fallback if ONNX fails.)
 
 Required error shapes:
 
@@ -105,16 +109,21 @@ Required error shapes:
 ### 2.3 Required modules
 
 Create:
+
 - `src/lib/finger-engine.native.ts`
 - `src/lib/stress-from-finger.ts`
 
 Responsibilities:
-- `finger-engine.native.ts`: session orchestration, frame processing, detection, signal extraction, peaks/HRV, final response.
-- `stress-from-finger.ts`: map RMSSD to score and band, clamp and normalize output.
+
+- `finger-engine.native.ts`: session orchestration, frame processing, detection, signal extraction, peaks/HRV, ONNX inference, final response.
+- `stress-from-finger.ts`: map RMSSD to score and band (fallback path), shared band thresholds.
+- `assets/models/ppg_stress_mlp.onnx`: offline-trained MLP (see `scripts/export_ppg_stress_onnx.py`); runtime via `onnxruntime-react-native` (`ppg-stress-onnx.ts`).
+- `ppg-stress-features.ts`: 8-D feature vector aligned with the export script.
 
 ### 2.4 Runtime/camera requirements
 
 Use **VisionCamera** (not Expo Camera) because finger PPG requires:
+
 - back camera selection,
 - torch control during capture,
 - frame-by-frame access at stable FPS (~30).
@@ -151,12 +160,9 @@ Use **VisionCamera** (not Expo Camera) because finger PPG requires:
    - RMSSD = sqrt(mean(square(diff(RR)))).
 
 6. **Stress mapping**
-   - `estimateStressFromPPG(rmssd)` in `stress-from-finger.ts`
-   - Mapping:
-     - `rmssd < 20` -> `elevated`
-     - `20-50` -> `moderate`
-     - `> 50` -> `low`
-   - Score normalized and clamped to 15-95.
+   - **Primary:** ONNX MLP (`ppg_stress_mlp.onnx`) on normalized PPG features (includes RMSSD/BPM/peaks/amplitude cues).
+   - **Fallback:** `estimateStressFromPPG(rmssd)` in `stress-from-finger.ts` if ONNX load/inference fails.
+   - Bands from score: same thresholds as other modes (e.g. &lt;40 low, &gt;72 elevated after clamp 15–95).
 
 ### 2.6 Finger UI flow
 
@@ -178,7 +184,7 @@ Use **VisionCamera** (not Expo Camera) because finger PPG requires:
 ### 2.8 Finger-specific performance requirements
 
 - ~30 FPS target during collection.
-- Lightweight processing path (signal math, no heavy model required).
+- ONNX inference is small (few KB model); signal math remains on-CPU before the net.
 - Smooth execution on iOS without UI stutter.
 
 ### 2.9 Finger success criteria
@@ -190,4 +196,4 @@ Use **VisionCamera** (not Expo Camera) because finger PPG requires:
 
 ---
 
-*End of split plans — implementation begins only after explicit go-ahead.*
+*Face Part 1 reflects the current MediaPipe + WebView native implementation. Finger Part 2 remains as originally specified.*

@@ -1,0 +1,15 @@
+# Edge Functions — https://supabase.com/docs/guides/functions/function-configuration
+#
+# Gateway JWT verification only supports legacy HS256. If Auth uses asymmetric
+# signing (ES256), the gateway returns UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM.
+# This function still validates the user with supabase.auth.getUser(jwt) inside index.ts.
+#
+# After adding this file, redeploy: supabase functions deploy question-checkin
+# Or in Dashboard → Edge Functions → question-checkin → turn OFF "Verify JWT".
+[functions.question-checkin]
+verify_jwt = false
+entrypoint = "./functions/checkin-chat/index.ts"
+
+[functions.discover-feed]
+verify_jwt = false
+entrypoint = "./functions/discover-feed/index.ts"

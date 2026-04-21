@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AudioMeasureFlow } from "@/components/estimate/audio-measure-flow";
+import { QuestionsMeasureFlow } from "@/components/estimate/questions-measure-flow";
 import { VisualMeasureFlow } from "@/components/estimate/visual-measure-flow";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 
@@ -144,6 +145,24 @@ export default function EstimateModeScreen() {
         >
           <FingerMeasureFlow onBack={() => router.back()} />
         </Suspense>
+      </SafeAreaView>
+    );
+  }
+
+  if (mode === "questions") {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.text} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{title}</Text>
+        </View>
+        <QuestionsMeasureFlow />
       </SafeAreaView>
     );
   }
