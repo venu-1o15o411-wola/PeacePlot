@@ -69,10 +69,10 @@ Rules:
 Recommended provider split:
 
 - `Media` / `Places` visuals: Pixabay
-- `Music`: Jamendo
+- `Music`: Free Music Archive (via Openverse `source=fma`) + Internet Archive audio
 - `Books`: Gutenberg dataset via stable API gateway (e.g. Gutendex-style)
 - `AI advice`: internal generation/preset content
-- `Movement`: mixed source (Jamendo/Pixabay video + curated fallback)
+- `Movement`: mixed source (Pixabay video + curated fallback)
 
 All provider calls must go through Supabase Edge Functions (no provider key in Expo client).
 
@@ -403,7 +403,7 @@ The Discover revamp is complete only when all pass:
 
 ## 19) Open decisions to confirm before implementation
 
-1. Jamendo licensing tier and commercial usage terms for PeacePlot distribution.
+1. Validate FMA/Openverse attribution requirements and Internet Archive item licensing filters for PeacePlot distribution.
 2. Final Gutenberg access path (direct mirror vs Gutendex gateway).
 3. Subcategory set lock (initial list vs expanded set).
 4. Whether `AI advice` appears in featured 5 or only in category feeds.

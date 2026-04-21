@@ -29,7 +29,7 @@ type MediaType = "book" | "video" | "audio" | "image" | "text";
 
 type DiscoverItem = {
   id: string;
-  source: "seed" | "pixabay" | "jamendo" | "gutendex";
+  source: "seed" | "pixabay" | "gutendex" | "openverse";
   sourceItemId: string;
   category: Exclude<DiscoverCategory, "all">;
   modality: DiscoverModality;
@@ -66,6 +66,33 @@ type ProfileSignals = {
 
 type DiscoverSupabase = ReturnType<typeof createClient>;
 
+function normalizeCategoryCompat(
+  category: string,
+): Exclude<DiscoverCategory, "all"> | null {
+  if (category === "media") return "video";
+  if (
+    category === "books" ||
+    category === "video" ||
+    category === "image" ||
+    category === "music" ||
+    category === "movement" ||
+    category === "places" ||
+    category === "ai"
+  ) {
+    return category;
+  }
+  return null;
+}
+
+function normalizeItemCompat(item: DiscoverItem): DiscoverItem | null {
+  const nextCategory = normalizeCategoryCompat(String(item.category ?? ""));
+  if (!nextCategory) return null;
+  return {
+    ...item,
+    category: nextCategory,
+  };
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -79,10 +106,6 @@ function clamp(n: number, lo: number, hi: number) {
 
 function nowIso(): string {
   return new Date().toISOString();
-}
-
-function ttlIso(hours: number): string {
-  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 }
 
 function hashString(input: string): number {
@@ -430,91 +453,394 @@ async function fetchPixabayMedia(apiKey: string, query: string, page: number, ki
   }
 }
 
-async function fetchJamendoMusic(clientId: string, query: string, offset: number): Promise<DiscoverItem[]> {
-  const u = new URL("https://api.jamendo.com/v3.0/tracks/");
-  u.searchParams.set("client_id", clientId);
-  u.searchParams.set("format", "json");
-  u.searchParams.set("limit", "60");
-  u.searchParams.set("offset", String(offset));
-  u.searchParams.set("include", "musicinfo");
-  u.searchParams.set("audioformat", "mp32");
-  u.searchParams.set("order", "popularity_total");
-  // Relaxation-oriented query, but keep retrieval broad enough to avoid empty lists.
-  if (query.trim()) {
-    u.searchParams.set("search", query.trim());
-  } else {
-    u.searchParams.set("search", "relaxing instrumental ambient meditation");
+const MUSIC_BANNED_TERMS = [
+  "sfx",
+  "sound effect",
+  "effect",
+  "fx",
+  "foley",
+  "whoosh",
+  "hit",
+  "impact",
+  "explosion",
+  "alarm",
+  "ringtone",
+  "notification",
+  "glitch",
+  "noise",
+  "beep",
+  "ui",
+  "button",
+  "cinematic riser",
+  "trailer",
+];
+
+const SPEECH_INDICATORS = [
+  "talk",
+  "speech",
+  "interview",
+  "podcast",
+  "episode",
+  "narration",
+  "lecture",
+  "discussion",
+  "news",
+  "commentary",
+  "audiobook",
+  "spoken word",
+  "sermon",
+  "debate",
+];
+const SPEECH_INDICATOR_SET = new Set(SPEECH_INDICATORS);
+
+const ALLOWED_MUSIC_GENRES = [
+  "electronic",
+  "ambient",
+  "classical",
+  "instrumental",
+  "jazz",
+  "lofi",
+  "lo-fi",
+  "chillout",
+  "chill",
+  "soundtrack",
+  "experimental",
+];
+const ALLOWED_MUSIC_GENRE_SET = new Set(ALLOWED_MUSIC_GENRES);
+
+const BLOCKED_GENRES = [
+  "spoken",
+  "podcast",
+  "radio",
+  "interview",
+  "audiobook",
+  "news",
+];
+const BLOCKED_GENRE_SET = new Set(BLOCKED_GENRES);
+
+const TAG_NORMALIZATION: Record<string, string> = {
+  ambient: "calm",
+  meditation: "calm",
+  focus: "productivity",
+  sleep: "sleep",
+  "dark ambient": "deep_relax",
+  calm: "calm",
+  chill: "calm",
+  chillout: "calm",
+  instrumental: "music",
+  classical: "music",
+  jazz: "music",
+  lofi: "music",
+  "lo-fi": "music",
+};
+
+function isLikelyRelaxingMusic(title: string, artist: string): boolean {
+  const blob = `${title} ${artist}`.toLowerCase();
+  return !MUSIC_BANNED_TERMS.some((t) => blob.includes(t));
+}
+
+function textBlobForTrack(
+  title: string,
+  artist: string,
+  description: string,
+  tags: string[],
+  genres: string[],
+): string {
+  return [title, artist, description, ...tags, ...genres].join(" ").toLowerCase();
+}
+
+function containsSpeechIndicators(blob: string): boolean {
+  for (const w of SPEECH_INDICATOR_SET) {
+    if (blob.includes(w)) return true;
   }
+  return false;
+}
+
+function hasBlockedGenre(genres: string[]): boolean {
+  for (const raw of genres) {
+    const g = raw.toLowerCase();
+    for (const blocked of BLOCKED_GENRE_SET) {
+      if (g.includes(blocked)) return true;
+    }
+  }
+  return false;
+}
+
+function hasAllowedGenre(genres: string[], blob: string): boolean {
+  if (genres.length === 0) {
+    // Openverse/FMA often omits genre metadata; don't hard-fail on missing fields.
+    return true;
+  }
+  for (const raw of genres) {
+    const g = raw.toLowerCase();
+    for (const allowed of ALLOWED_MUSIC_GENRE_SET) {
+      if (g.includes(allowed)) return true;
+    }
+  }
+  // FMA/Openverse metadata can be sparse, so allow genre inference from text fields.
+  for (const allowed of ALLOWED_MUSIC_GENRE_SET) {
+    if (blob.includes(allowed)) return true;
+  }
+  return false;
+}
+
+function normalizeTags(tags: string[], genres: string[]): string[] {
+  const out = new Set<string>(["music", "pixabay"]);
+  const merged = [...tags, ...genres];
+  for (const raw of merged) {
+    const k = raw.trim().toLowerCase();
+    if (!k) continue;
+    out.add(k);
+    if (TAG_NORMALIZATION[k]) out.add(TAG_NORMALIZATION[k]);
+  }
+  return Array.from(out);
+}
+
+function isSupportedAudioUrl(url: string): boolean {
+  const clean = url.toLowerCase().split("?")[0];
+  if (
+    clean.endsWith(".mp3") ||
+    clean.endsWith(".m4a") ||
+    clean.endsWith(".aac") ||
+    clean.endsWith(".wav")
+  ) return true;
+  try {
+    const u = new URL(url);
+    const format = (u.searchParams.get("format") ?? "").toLowerCase();
+    if (format.includes("mp3") || format.includes("mp32") || format.includes("m4a") || format.includes("aac")) {
+      return true;
+    }
+    if (u.hostname.includes("storage.jamendo.com")) return true;
+  } catch {
+    // ignore URL parse errors and fall through
+  }
+  return false;
+}
+
+function parseDurationSeconds(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    const n = Math.max(0, raw);
+    // Openverse commonly returns duration in milliseconds for some sources.
+    return n > 10000 ? Math.round(n / 1000) : n;
+  }
+  if (typeof raw !== "string") return 0;
+  const v = raw.trim();
+  if (!v) return 0;
+  const direct = Number(v);
+  if (Number.isFinite(direct)) return Math.max(0, direct);
+  const parts = v.split(":").map((p) => Number(p));
+  if (parts.some((p) => !Number.isFinite(p) || p < 0)) return 0;
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return 0;
+}
+
+async function fetchPixabayMusic(apiKey: string, query: string, page: number): Promise<DiscoverItem[]> {
+  const u = new URL("https://pixabay.com/api/audio/");
+  u.searchParams.set("key", apiKey);
+  u.searchParams.set("page", String(page));
+  u.searchParams.set("per_page", "50");
+  u.searchParams.set("order", "popular");
+  u.searchParams.set("q", query.trim() || "meditation calm piano relaxing ambient");
   const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), 4500);
+  const t = setTimeout(() => ac.abort(), 6000);
   try {
     const res = await fetch(u.toString(), { signal: ac.signal });
     if (!res.ok) return [];
     const body = await res.json() as {
       results?: Array<{
-        id: string;
-        name: string;
-        artist_name?: string;
-        duration?: number;
-        audio?: string;
-        audiodownload?: string;
+        id?: string | number;
+        title?: string;
+        creator?: string;
+        user?: string;
+        type?: string;
+        tags?: string;
+        duration?: number | string;
+        audio?: {
+          low?: string;
+          medium?: string;
+          high?: string;
+        };
+      }>;
+      hits?: Array<{
+        id?: string | number;
+        title?: string;
+        user?: string;
+        type?: string;
+        tags?: string;
+        duration?: number | string;
+        audio?: {
+          low?: string;
+          medium?: string;
+          high?: string;
+        };
       }>;
     };
+    const hits = Array.isArray(body.hits) ? body.hits : Array.isArray(body.results) ? body.results : [];
     const out: DiscoverItem[] = [];
-    const seenUrls = new Set<string>();
-    const bannedTerms = [
-      "sfx",
-      "sound effect",
-      "effect",
-      "fx",
-      "foley",
-      "whoosh",
-      "hit",
-      "impact",
-      "explosion",
-      "alarm",
-      "ringtone",
-      "notification",
-      "glitch",
-      "noise",
-      "beep",
-      "ui",
-      "button",
-      "cinematic riser",
-      "trailer",
-    ];
-    for (const [i, r] of (body.results ?? []).slice(0, 120).entries()) {
-      const contentUrl = [r.audio, r.audiodownload].find(
-        (x) => typeof x === "string" && x.startsWith("http"),
-      );
-      if (!contentUrl || seenUrls.has(contentUrl)) continue;
-      const durationSec = Math.max(0, Number(r.duration ?? 0));
-      // Hard floor: only tracks >= 60 seconds.
-      if (durationSec < 60) continue;
-
-      const title = String(r.name ?? "").trim();
-      const artist = String(r.artist_name ?? "").trim();
-      const blob = `${title} ${artist}`.toLowerCase();
-      // Remove obvious sound-effects style entries.
-      if (bannedTerms.some((t) => blob.includes(t))) continue;
-
-      seenUrls.add(contentUrl);
-      out.push({
-        id: `jamendo:${r.id}`,
-        source: "jamendo",
-        sourceItemId: String(r.id),
+    const fallback: DiscoverItem[] = [];
+    const seen = new Set<string>();
+    for (const [i, r] of hits.entries()) {
+      if (typeof r.type === "string" && r.type.toLowerCase() !== "music") continue;
+      const contentUrl =
+        typeof r.audio?.high === "string" && r.audio.high.startsWith("http")
+          ? r.audio.high
+          : typeof r.audio?.medium === "string" && r.audio.medium.startsWith("http")
+            ? r.audio.medium
+            : typeof r.audio?.low === "string" && r.audio.low.startsWith("http")
+              ? r.audio.low
+              : "";
+      if (!contentUrl.startsWith("http") || seen.has(contentUrl)) continue;
+      if (!isSupportedAudioUrl(contentUrl)) continue;
+      const durationSec = parseDurationSeconds(r.duration);
+      // Keep 2-10 min rule when duration is known, but allow unknown duration metadata.
+      if (durationSec > 0 && (durationSec < 120 || durationSec > 600)) continue;
+      const title = String(r.title ?? "").trim() || `Pixabay Track ${i + 1}`;
+      const artist = String(r.user ?? "").trim();
+      const tags = String(r.tags ?? "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+      const genres = tags;
+      const blob = textBlobForTrack(title, artist, "", tags, genres);
+      const baseItem: DiscoverItem = {
+        id: `pixabay:audio:${r.id ?? `${page}-${i}`}`,
+        source: "pixabay",
+        sourceItemId: String(r.id ?? `${page}-${i}`),
         category: "music",
         modality: "music",
         mediaType: "audio",
-        title: title || `Track ${i + 1}`,
-        subtitle: artist ? `By ${artist}` : "Calming track",
-        duration: `${Math.max(1, Math.round(durationSec / 60))} min`,
-        tags: ["music", "jamendo", "calm"],
+        title,
+        subtitle: artist ? `By ${artist}` : "Pixabay music track",
+        duration: `${Math.max(1, Math.round((durationSec || 180) / 60))} min`,
+        tags: normalizeTags(tags, genres),
         contentUrl,
-      });
-      if (out.length >= 20) break;
+      };
+      // Keep a softer fallback candidate (music type + duration + no speech).
+      if (!containsSpeechIndicators(blob)) {
+        fallback.push(baseItem);
+      }
+      // Multi-layer filtering: genre gate -> speech detection -> quality filter.
+      if (hasBlockedGenre(genres)) continue;
+      if (!hasAllowedGenre(genres, blob)) continue;
+      if (containsSpeechIndicators(blob)) continue;
+      if (!isLikelyRelaxingMusic(title, artist)) continue;
+      seen.add(contentUrl);
+      out.push(baseItem);
+      if (out.length >= 25) break;
     }
-    return out;
+    if (out.length > 0) return out;
+    const dedupedFallback: DiscoverItem[] = [];
+    const fallbackSeen = new Set<string>();
+    for (const item of fallback) {
+      if (!item.contentUrl || fallbackSeen.has(item.contentUrl)) continue;
+      fallbackSeen.add(item.contentUrl);
+      dedupedFallback.push(item);
+      if (dedupedFallback.length >= 25) break;
+    }
+    return dedupedFallback;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function fetchOpenverseJamendoMusic(query: string, page: number): Promise<DiscoverItem[]> {
+  const u = new URL("https://api.openverse.org/v1/audio/");
+  u.searchParams.set("source", "jamendo");
+  u.searchParams.set("page_size", "80");
+  u.searchParams.set("page", String(page));
+  u.searchParams.set("q", query.trim() || "calm ambient instrumental focus meditation");
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 6000);
+  try {
+    const res = await fetch(u.toString(), { signal: ac.signal });
+    if (!res.ok) return [];
+    const body = await res.json() as {
+      results?: Array<{
+        id?: string;
+        title?: string;
+        creator?: string;
+        category?: string;
+        genres?: string[] | string;
+        tags?: Array<string | { name?: string }> | string;
+        description?: string;
+        duration?: number | string;
+        url?: string;
+        audio_url?: string;
+        thumbnail?: string;
+      }>;
+    };
+    const out: DiscoverItem[] = [];
+    const fallback: DiscoverItem[] = [];
+    const seen = new Set<string>();
+    for (const [i, r] of (body.results ?? []).entries()) {
+      const contentUrl = typeof r.audio_url === "string"
+        ? r.audio_url
+        : typeof r.url === "string"
+          ? r.url
+          : "";
+      if (!contentUrl.startsWith("http") || seen.has(contentUrl)) continue;
+      if (!isSupportedAudioUrl(contentUrl)) continue;
+      const durationSec = parseDurationSeconds(r.duration);
+      if (durationSec > 0 && (durationSec < 120 || durationSec > 600)) continue;
+      const title = String(r.title ?? "").trim() || `Jamendo Track ${i + 1}`;
+      const artist = String(r.creator ?? "").trim();
+      const description = String(r.description ?? "").trim();
+      const category = String(r.category ?? "").trim().toLowerCase();
+      const genres = Array.isArray(r.genres)
+        ? r.genres.map((g) => String(g))
+        : typeof r.genres === "string"
+          ? [r.genres]
+          : category
+            ? [category]
+            : [];
+      const tags = Array.isArray(r.tags)
+        ? r.tags.map((t) => (typeof t === "string" ? t : String(t?.name ?? ""))).filter(Boolean)
+        : typeof r.tags === "string"
+          ? r.tags.split(",").map((x) => x.trim()).filter(Boolean)
+          : [];
+      const blob = textBlobForTrack(title, artist, description, tags, genres);
+      const baseItem: DiscoverItem = {
+        id: `openverse:jamendo:${r.id ?? `${page}-${i}`}`,
+        source: "openverse",
+        sourceItemId: String(r.id ?? `${page}-${i}`),
+        category: "music",
+        modality: "music",
+        mediaType: "audio",
+        title,
+        subtitle: artist ? `By ${artist}` : "Jamendo track",
+        duration: `${Math.max(1, Math.round((durationSec || 180) / 60))} min`,
+        tags: normalizeTags(tags, genres),
+        thumbUrl: typeof r.thumbnail === "string" ? r.thumbnail : undefined,
+        contentUrl,
+      };
+      if (!containsSpeechIndicators(blob)) {
+        fallback.push(baseItem);
+      }
+      if (hasBlockedGenre(genres)) continue;
+      if (!hasAllowedGenre(genres, blob)) continue;
+      if (containsSpeechIndicators(blob)) continue;
+      if (!isLikelyRelaxingMusic(title, artist)) continue;
+      seen.add(contentUrl);
+      out.push(baseItem);
+      if (out.length >= 25) break;
+    }
+    if (out.length > 0) return out;
+    const dedupedFallback: DiscoverItem[] = [];
+    const fallbackSeen = new Set<string>();
+    for (const item of fallback) {
+      if (!item.contentUrl || fallbackSeen.has(item.contentUrl)) continue;
+      fallbackSeen.add(item.contentUrl);
+      dedupedFallback.push(item);
+      if (dedupedFallback.length >= 25) break;
+    }
+    return dedupedFallback;
   } catch {
     return [];
   } finally {
@@ -527,12 +853,8 @@ async function fetchGutendexCached(
   query: string,
   page: number,
 ): Promise<DiscoverItem[]> {
-  const key = `gutendex:${query.toLowerCase()}:${page}`;
-  const cached = await getRawCache<DiscoverItem[]>(supabase, key);
-  if (cached) return cached;
-  const fresh = await fetchGutendex(query, page);
-  if (fresh.length) await setRawCache(supabase, key, "gutendex", fresh, 24);
-  return fresh;
+  void supabase;
+  return fetchGutendex(query, page);
 }
 
 async function fetchPixabayCached(
@@ -542,26 +864,27 @@ async function fetchPixabayCached(
   page: number,
   kind: "media" | "places",
 ): Promise<DiscoverItem[]> {
-  const key = `pixabay:${kind}:${query.toLowerCase()}:${page}`;
-  const cached = await getRawCache<DiscoverItem[]>(supabase, key);
-  if (cached) return cached;
-  const fresh = await fetchPixabayMedia(apiKey, query, page, kind);
-  if (fresh.length) await setRawCache(supabase, key, "pixabay", fresh, 24);
-  return fresh;
+  void supabase;
+  return fetchPixabayMedia(apiKey, query, page, kind);
 }
 
-async function fetchJamendoCached(
+async function fetchPixabayMusicCached(
   supabase: DiscoverSupabase,
-  clientId: string,
+  apiKey: string,
   query: string,
-  offset: number,
+  page: number,
 ): Promise<DiscoverItem[]> {
-  const key = `jamendo:${query.toLowerCase()}:${offset}`;
-  const cached = await getRawCache<DiscoverItem[]>(supabase, key);
-  if (cached) return cached;
-  const fresh = await fetchJamendoMusic(clientId, query, offset);
-  if (fresh.length) await setRawCache(supabase, key, "jamendo", fresh, 12);
-  return fresh;
+  void supabase;
+  return fetchPixabayMusic(apiKey, query, page);
+}
+
+async function fetchOpenverseMusicCached(
+  supabase: DiscoverSupabase,
+  query: string,
+  page: number,
+): Promise<DiscoverItem[]> {
+  void supabase;
+  return fetchOpenverseJamendoMusic(query, page);
 }
 
 async function loadSignals(
@@ -597,84 +920,6 @@ function hasRenderableMedia(item: DiscoverItem): boolean {
   return false;
 }
 
-function queryHashFor(params: {
-  profileId: string;
-  category: DiscoverCategory;
-  query: string;
-  page: number;
-  pageSize: number;
-  dayKey: string;
-}): string {
-  const k = `v5musicfetch|${params.profileId}|${params.category}|${params.query.toLowerCase()}|${params.page}|${params.pageSize}|${params.dayKey}`;
-  return `qh_${hashString(k)}`;
-}
-
-async function getRawCache<T>(
-  supabase: DiscoverSupabase,
-  cacheKey: string,
-): Promise<T | null> {
-  const { data } = await supabase
-    .from("discover_raw_cache")
-    .select("payload_json, expires_at")
-    .eq("cache_key", cacheKey)
-    .gt("expires_at", nowIso())
-    .maybeSingle();
-  return (data?.payload_json as T | undefined) ?? null;
-}
-
-async function setRawCache(
-  supabase: DiscoverSupabase,
-  cacheKey: string,
-  source: string,
-  payload: unknown,
-  ttlHours: number,
-): Promise<void> {
-  await supabase.from("discover_raw_cache").upsert({
-    cache_key: cacheKey,
-    source,
-    payload_json: payload,
-    fetched_at: nowIso(),
-    expires_at: ttlIso(ttlHours),
-  });
-}
-
-async function upsertCatalogItems(
-  supabase: DiscoverSupabase,
-  items: DiscoverItem[],
-): Promise<void> {
-  if (!items.length) return;
-  await supabase.from("discover_catalog_cache").upsert(
-    items.map((x) => ({
-      item_uid: x.id,
-      source: x.source,
-      category: x.category,
-      tags: x.tags,
-      item_json: x,
-      updated_at: nowIso(),
-      expires_at: ttlIso(48),
-    })),
-    { onConflict: "item_uid" },
-  );
-}
-
-async function loadItemsFromCatalog(
-  supabase: DiscoverSupabase,
-  ids: string[],
-): Promise<DiscoverItem[]> {
-  if (!ids.length) return [];
-  const { data } = await supabase
-    .from("discover_catalog_cache")
-    .select("item_uid, item_json")
-    .in("item_uid", ids);
-  const map = new Map<string, DiscoverItem>();
-  for (const row of data ?? []) {
-    const uid = String((row as Record<string, unknown>).item_uid ?? "");
-    const raw = (row as Record<string, unknown>).item_json;
-    if (!uid || !raw || typeof raw !== "object") continue;
-    map.set(uid, raw as DiscoverItem);
-  }
-  return ids.map((id) => map.get(id)).filter(Boolean) as DiscoverItem[];
-}
 
 function pickDailyFeatured(
   pool: DiscoverItem[],
@@ -731,7 +976,11 @@ function blendAll(
     places: [],
     ai: [],
   };
-  for (const x of items) buckets[x.category].push(x);
+  for (const x of items) {
+    const normalized = normalizeItemCompat(x);
+    if (!normalized) continue;
+    buckets[normalized.category].push(normalized);
+  }
   const sorted = Object.fromEntries(
     (Object.keys(buckets) as Array<Exclude<DiscoverCategory, "all">>).map((k) => [
       k,
@@ -754,8 +1003,7 @@ function blendAll(
     if (!pushed) break;
     pass += 1;
   }
-  const start = (page - 1) * pageSize;
-  return merged.slice(start, start + pageSize);
+  return merged.slice(0, pageSize);
 }
 
 function ensurePageSizeFromPool(
@@ -826,38 +1074,7 @@ serve(async (req) => {
     }
 
     if (mode === "warm-cache") {
-      const pageToWarm = Math.max(1, Number(body.page ?? 1));
-      const queryToWarm = (body.query ?? "").trim();
-      const [booksWarm, mediaWarm, placesWarm, musicWarm, movementWarm] = await Promise.all([
-        fetchGutendexCached(supabase, queryToWarm, pageToWarm),
-        Deno.env.get("PIXABAY_API_KEY")
-          ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, queryToWarm, pageToWarm, "media")
-          : Promise.resolve([] as DiscoverItem[]),
-        Deno.env.get("PIXABAY_API_KEY")
-          ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, queryToWarm, pageToWarm, "places")
-          : Promise.resolve([] as DiscoverItem[]),
-        Deno.env.get("JAMENDO_CLIENT_ID")
-          ? fetchJamendoCached(supabase, Deno.env.get("JAMENDO_CLIENT_ID")!, queryToWarm, 0)
-          : Promise.resolve([] as DiscoverItem[]),
-        Deno.env.get("PIXABAY_API_KEY")
-          ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, `${queryToWarm} yoga tai chi`, pageToWarm, "media")
-          : Promise.resolve([] as DiscoverItem[]),
-      ]);
-      const movementMapped = movementWarm.map((x, i) => ({
-        ...x,
-        id: `pixabay:movement:${x.sourceItemId}:${i}`,
-        category: "movement" as const,
-        modality: i % 2 === 0 ? "yoga" as const : "tai-chi" as const,
-      }));
-      const warmed = dedupe([
-        ...booksWarm,
-        ...mediaWarm,
-        ...placesWarm,
-        ...musicWarm,
-        ...movementMapped,
-      ]);
-      await upsertCatalogItems(supabase, warmed);
-      return jsonResponse({ ok: true, warmedCount: warmed.length });
+      return jsonResponse({ ok: true, warmedCount: 0, liveOnly: true });
     }
 
     const signals = profileId
@@ -865,28 +1082,50 @@ serve(async (req) => {
       : { stressLevel: null, moodValence: null, energyLevel: null, primarySources: [], secondarySources: [] };
     const weights = categoryWeights(signals);
     let pool: DiscoverItem[] = makeSeedCatalog();
-    const [booksExt, mediaExt, placesExt, musicExt, movementExt] = await Promise.all([
-      fetchGutendexCached(supabase, query, page),
-      Deno.env.get("PIXABAY_API_KEY")
-        ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, query, page, "media")
-        : Promise.resolve([] as DiscoverItem[]),
-      Deno.env.get("PIXABAY_API_KEY")
-        ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, query, page, "places")
-        : Promise.resolve([] as DiscoverItem[]),
-      Deno.env.get("JAMENDO_CLIENT_ID")
-        ? fetchJamendoCached(supabase, Deno.env.get("JAMENDO_CLIENT_ID")!, query, (page - 1) * pageSize)
-        : Promise.resolve([] as DiscoverItem[]),
-      Deno.env.get("PIXABAY_API_KEY")
-        ? fetchPixabayCached(supabase, Deno.env.get("PIXABAY_API_KEY")!, `${query} yoga tai chi`, page, "media")
-        : Promise.resolve([] as DiscoverItem[]),
-    ]);
-    const movementMapped = movementExt.map((x, i) => ({
-      ...x,
-      id: `pixabay:movement:${x.sourceItemId}:${page}:${i}`,
-      category: "movement" as const,
-      modality: i % 2 === 0 ? "yoga" as const : "tai-chi" as const,
-      subtitle: "Guided movement visual from Pixabay",
-    }));
+    const pixabayKey = Deno.env.get("PIXABAY_API_KEY");
+    const loadExternalPage = async (sourcePage: number) => {
+      const needBooks = mode === "featured" || category === "all" || category === "books";
+      const needMedia = mode === "featured" || category === "all" || category === "video" || category === "image";
+      const needPlaces = mode === "featured" || category === "all" || category === "places";
+      const needMusic = mode === "featured" || category === "all" || category === "music";
+      const needMovement = mode === "featured" || category === "all" || category === "movement";
+      const musicFetches: Promise<DiscoverItem[]>[] = [];
+      if (needMusic) {
+        if (pixabayKey) {
+          musicFetches.push(fetchPixabayMusicCached(supabase, pixabayKey, query, sourcePage));
+        }
+        musicFetches.push(fetchOpenverseMusicCached(supabase, query, sourcePage));
+      }
+      const [booksExt, mediaExt, placesExt, movementExt, ...musicParts] = await Promise.all([
+        needBooks ? fetchGutendexCached(supabase, query, sourcePage) : Promise.resolve([] as DiscoverItem[]),
+        needMedia && pixabayKey
+          ? fetchPixabayCached(supabase, pixabayKey, query, sourcePage, "media")
+          : Promise.resolve([] as DiscoverItem[]),
+        needPlaces && pixabayKey
+          ? fetchPixabayCached(supabase, pixabayKey, query, sourcePage, "places")
+          : Promise.resolve([] as DiscoverItem[]),
+        needMovement && pixabayKey
+          ? fetchPixabayCached(supabase, pixabayKey, `${query} yoga tai chi`, sourcePage, "media")
+          : Promise.resolve([] as DiscoverItem[]),
+        ...musicFetches,
+      ]);
+      const musicExt = dedupe(musicParts.flat());
+      const movementMapped = movementExt.map((x, i) => ({
+        ...x,
+        id: `pixabay:movement:${x.sourceItemId}:${sourcePage}:${i}`,
+        category: "movement" as const,
+        modality: i % 2 === 0 ? "yoga" as const : "tai-chi" as const,
+        subtitle: "Guided movement visual from Pixabay",
+      }));
+      return { booksExt, mediaExt, placesExt, musicExt, movementMapped };
+    };
+    const {
+      booksExt,
+      mediaExt,
+      placesExt,
+      musicExt,
+      movementMapped,
+    } = await loadExternalPage(page);
     const aiExt: DiscoverItem[] = Array.from({ length: 20 }).map((_, i) => ({
       id: `ai:${dayKey}:${page}:${i}`,
       source: "seed",
@@ -900,15 +1139,40 @@ serve(async (req) => {
       tags: ["ai", "advice"],
       contentText: "Pause. Name what you feel. Choose one tiny next action for the next ten minutes.",
     }));
-    pool = dedupe(pool.concat(booksExt, mediaExt, placesExt, musicExt, movementMapped, aiExt)).filter(
-      hasRenderableMedia,
-    );
-    await upsertCatalogItems(supabase, pool);
-
+    pool = dedupe(pool.concat(booksExt, mediaExt, placesExt, musicExt, movementMapped, aiExt))
+      .map(normalizeItemCompat)
+      .filter(Boolean)
+      .filter((x) => hasRenderableMedia(x as DiscoverItem)) as DiscoverItem[];
+    if (mode === "feed") {
+      const minimumNeeded = page * pageSize;
+      let attempts = 0;
+      let sourcePage = page + 1;
+      while (attempts < 10) {
+        const categoryPoolRaw = pool.filter((x) => mapCategory(x, category));
+        const categoryPoolNonSeed = categoryPoolRaw.filter((x) => x.source !== "seed");
+        const categoryPool =
+          category === "ai"
+            ? categoryPoolRaw
+            : category === "music"
+              ? categoryPoolNonSeed
+              : categoryPoolNonSeed.length >= pageSize
+                ? categoryPoolNonSeed
+                : categoryPoolRaw;
+        if (categoryPool.length >= minimumNeeded) break;
+        const extra = await loadExternalPage(sourcePage);
+        pool = dedupe(
+          pool.concat(extra.booksExt, extra.mediaExt, extra.placesExt, extra.musicExt, extra.movementMapped),
+        )
+          .map(normalizeItemCompat)
+          .filter(Boolean)
+          .filter((x) => hasRenderableMedia(x as DiscoverItem)) as DiscoverItem[];
+        sourcePage += 1;
+        attempts += 1;
+      }
+    }
     if (mode === "item") {
       const id = body.id ?? "";
-      const [cached] = await loadItemsFromCatalog(supabase, [id]);
-      const item = cached ?? pool.find((x) => x.id === id);
+      const item = pool.find((x) => x.id === id);
       if (!item) return jsonResponse({ error: "Item not found" }, 404);
       return jsonResponse({ item });
     }
@@ -949,44 +1213,13 @@ serve(async (req) => {
       return jsonResponse({ items: selected, dayKey, personalized: Boolean(signals.stressLevel) });
     }
 
-    const qHash = queryHashFor({
-      profileId: profileId ?? "anon",
-      category,
-      query,
-      page,
-      pageSize,
-      dayKey,
-    });
-    const { data: cachedQuery } = await supabase
-      .from("discover_query_cache")
-      .select("item_ids, has_more, total_count, expires_at")
-      .eq("query_hash", qHash)
-      .gt("expires_at", nowIso())
-      .maybeSingle();
-    if (cachedQuery?.item_ids && Array.isArray(cachedQuery.item_ids)) {
-      const ids = cachedQuery.item_ids.map((x: unknown) => String(x)).filter(Boolean);
-      const cachedItems = await loadItemsFromCatalog(supabase, ids);
-      if (cachedItems.length) {
-        return jsonResponse({
-          items: dedupe(cachedItems),
-          page,
-          pageSize,
-          hasMore: cachedQuery.has_more === true,
-          nextPage: cachedQuery.has_more === true ? page + 1 : null,
-          total: Number(cachedQuery.total_count ?? cachedItems.length),
-          personalized: Boolean(signals.stressLevel),
-          cacheHit: true,
-        });
-      }
-    }
-
     const categoryPoolRaw = pool.filter((x) => mapCategory(x, category));
     const categoryPoolNonSeed = categoryPoolRaw.filter((x) => x.source !== "seed");
     const categoryPool =
       category === "ai"
         ? categoryPoolRaw
         : category === "music"
-          ? categoryPoolNonSeed
+          ? (categoryPoolNonSeed.length > 0 ? categoryPoolNonSeed : categoryPoolRaw)
         : categoryPoolNonSeed.length >= pageSize
           ? categoryPoolNonSeed
           : categoryPoolRaw;
@@ -1009,20 +1242,19 @@ serve(async (req) => {
       items = sorted.slice(start, start + pageSize);
     }
     const total = categoryPool.length;
-    const hasMore = page * pageSize < total;
     const dedupedItems = dedupe(items);
-    await supabase.from("discover_query_cache").upsert({
-      query_hash: qHash,
-      category,
-      query_text: query,
-      page,
-      page_size: pageSize,
-      item_ids: dedupedItems.map((x) => x.id),
-      total_count: total,
-      has_more: hasMore,
-      updated_at: nowIso(),
-      expires_at: ttlIso(6),
-    });
+    const hasMore = page * pageSize < total || dedupedItems.length >= pageSize;
+    const musicDebug = category === "music"
+      ? {
+          poolTotal: total,
+          pageReturned: dedupedItems.length,
+          sourceCounts: {
+            pixabay: categoryPool.filter((x) => x.source === "pixabay").length,
+            openverse: categoryPool.filter((x) => x.source === "openverse").length,
+            seed: categoryPool.filter((x) => x.source === "seed").length,
+          },
+        }
+      : undefined;
     return jsonResponse({
       items: dedupedItems,
       page,
@@ -1031,6 +1263,7 @@ serve(async (req) => {
       nextPage: hasMore ? page + 1 : null,
       total,
       personalized: Boolean(signals.stressLevel),
+      musicDebug,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

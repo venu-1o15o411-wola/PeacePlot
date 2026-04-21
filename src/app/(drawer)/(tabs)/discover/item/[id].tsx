@@ -1,24 +1,34 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
 import {
-    fetchDiscoverItemById,
-    sendDiscoverFeedback,
-    suppressDiscoverItemId,
-    type DiscoverRemoteItem,
+  fetchDiscoverItemById,
+  sendDiscoverFeedback,
+  suppressDiscoverItemId,
+  type DiscoverRemoteItem,
 } from "@/lib/discover-feed";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
@@ -242,6 +252,213 @@ function resolveMediaType(item: DiscoverRemoteItem | undefined): DiscoverRemoteI
   return undefined;
 }
 
+function CustomAudioPlayer({
+  url,
+  title,
+  artist,
+  coverUrl,
+}: {
+  url: string;
+  title?: string;
+  artist?: string;
+  coverUrl?: string;
+}) {
+  const player = useAudioPlayer(url);
+  const status = useAudioPlayerStatus(player);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (status.playing) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        true
+      );
+    } else {
+      scale.value = withTiming(1, { duration: 500 });
+    }
+  }, [status.playing, scale]);
+
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const formatTime = (seconds?: number) => {
+    if (seconds == null || isNaN(seconds)) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
+  const progressPercent =
+    status.duration && status.duration > 0
+      ? (status.currentTime / status.duration) * 100
+      : 0;
+
+  const togglePlay = () => {
+    if (status.playing) player.pause();
+    else player.play();
+  };
+
+  const seekBackward = () => {
+    player.seekTo(Math.max(0, status.currentTime - 10));
+  };
+
+  const seekForward = () => {
+    if (status.duration) {
+      player.seekTo(Math.min(status.duration, status.currentTime + 10));
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#0F0F1A" }}>
+      <LinearGradient
+        colors={["#1A1A2E", "#0F0F1A", "#000000"]}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 32,
+        }}
+      >
+        <Animated.View
+          style={[
+            {
+              width: "100%",
+              aspectRatio: 1,
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderRadius: 16,
+              overflow: "hidden",
+              marginBottom: 48,
+              elevation: 10,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.5,
+              shadowRadius: 20,
+            },
+            animatedImageStyle,
+          ]}
+        >
+          <Image
+            source={{
+              uri:
+                coverUrl ||
+                "https://images.unsplash.com/photo-1614113489855-66422ad300a4?w=800&q=80",
+            }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+          />
+        </Animated.View>
+
+        <View style={{ width: "100%", alignItems: "flex-start", marginBottom: 32 }}>
+          <Text
+            style={{
+              color: "#FFF",
+              fontSize: 24,
+              fontWeight: "800",
+              marginBottom: 8,
+            }}
+            numberOfLines={1}
+          >
+            {title || "Unknown Title"}
+          </Text>
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 16,
+              fontWeight: "500",
+            }}
+            numberOfLines={1}
+          >
+            {artist || "Unknown Artist"}
+          </Text>
+        </View>
+
+        <View style={{ width: "100%", marginBottom: 48 }}>
+          <View
+            style={{
+              height: 6,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: 3,
+              marginBottom: 12,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                height: "100%",
+                backgroundColor: "#FFF",
+                width: `${progressPercent}%`,
+                borderRadius: 3,
+              }}
+            />
+          </View>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+              {formatTime(status.currentTime)}
+            </Text>
+            <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+              {formatTime(status.duration)}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 40,
+          }}
+        >
+          <Pressable
+            onPress={seekBackward}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            accessibilityLabel="Seek backward 10 seconds"
+          >
+            <Ionicons name="play-back" size={32} color="#FFF" />
+          </Pressable>
+          <Pressable
+            onPress={togglePlay}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.8 : 1,
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: "#FFF",
+              alignItems: "center",
+              justifyContent: "center",
+            })}
+            accessibilityLabel={status.playing ? "Pause" : "Play"}
+          >
+            <Ionicons
+              name={status.playing ? "pause" : "play"}
+              size={36}
+              color="#0F0F1A"
+              style={{ marginLeft: status.playing ? 0 : 4 }}
+            />
+          </Pressable>
+          <Pressable
+            onPress={seekForward}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            accessibilityLabel="Seek forward 10 seconds"
+          >
+            <Ionicons name="play-forward" size={32} color="#FFF" />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function DiscoverItemScreen() {
   const { id, payload } = useLocalSearchParams<{ id: string; payload?: string }>();
   const router = useRouter();
@@ -449,18 +666,17 @@ export default function DiscoverItemScreen() {
                   Audio failed to load in app for this URL.
                 </Text>
               ) : (
-                <WebView
-                  source={{ html: mediaPlayerHtml("audio", mediaUrl) }}
-                  style={{ width: "100%", height: "100%", backgroundColor: "transparent" }}
-                  mediaPlaybackRequiresUserAction={false}
-                  allowsInlineMediaPlayback
-                  originWhitelist={["*"]}
-                  javaScriptEnabled
-                  domStorageEnabled
-                  mixedContentMode="always"
-                  onError={() => setMediaLoadFailed(true)}
-                  onHttpError={() => setMediaLoadFailed(true)}
-                />
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 12 }}>
+                    Audio ready
+                  </Text>
+                  <Pressable
+                    style={[styles.primaryOpenBtn, { alignSelf: "center", marginBottom: 0 }]}
+                    onPress={() => setOpenViewer(true)}
+                  >
+                    <Text style={styles.primaryOpenBtnText}>Play Audio</Text>
+                  </Pressable>
+                </View>
               )
             ) : mediaType === "book" ? (
               item.contentUrl ? (
@@ -586,9 +802,9 @@ export default function DiscoverItemScreen() {
             </Pressable>
           </View>
           {mediaUrl ? (
-            mediaType === "video" || mediaType === "audio" ? (
+            mediaType === "video" ? (
               <WebView
-                source={{ html: mediaPlayerHtml(mediaType, mediaUrl, item?.thumbUrl) }}
+                source={{ html: mediaPlayerHtml("video", mediaUrl, item?.thumbUrl) }}
                 style={{ flex: 1, backgroundColor: "#000" }}
                 mediaPlaybackRequiresUserAction={false}
                 allowsInlineMediaPlayback
@@ -597,6 +813,13 @@ export default function DiscoverItemScreen() {
                 javaScriptEnabled
                 domStorageEnabled
                 mixedContentMode="always"
+              />
+            ) : mediaType === "audio" ? (
+              <CustomAudioPlayer
+                url={mediaUrl}
+                title={item?.title}
+                artist={item?.subtitle}
+                coverUrl={item?.thumbUrl}
               />
             ) : (
               <WebView

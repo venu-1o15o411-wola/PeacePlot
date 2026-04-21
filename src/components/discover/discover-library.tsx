@@ -1,56 +1,55 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { FontAwesome6 } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import type { Href } from "expo-router";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
+import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 import {
-    DISCOVER_CHIPS,
-    type DiscoverChipId,
-    type DiscoverModality,
+  DISCOVER_CHIPS,
+  type DiscoverChipId,
+  type DiscoverModality,
 } from "@/data/discover-mock";
 import {
-    clearSuppressedDiscoverItemIds,
-    fetchDiscoverFeatured,
-    fetchDiscoverFeed,
-    getSuppressedDiscoverItemIds,
-    warmDiscoverCache,
-    type DiscoverRemoteItem,
+  clearSuppressedDiscoverItemIds,
+  fetchDiscoverFeed,
+  fetchDiscoverFeatured,
+  getSuppressedDiscoverItemIds,
+  type DiscoverRemoteItem,
 } from "@/lib/discover-feed";
-import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
 function modalityIcon(
   m: DiscoverModality,
-): keyof typeof Ionicons.glyphMap {
+): React.ComponentProps<typeof FontAwesome6>["name"] {
   switch (m) {
     case "book":
-      return "book-outline";
+      return "book-open";
     case "video":
-      return "play-circle-outline";
+      return "circle-play";
     case "music":
-      return "musical-notes-outline";
+      return "music";
     case "story":
-      return "reader-outline";
+      return "book-open-reader";
     case "yoga":
-      return "body-outline";
+      return "child-reaching";
     case "tai-chi":
-      return "fitness-outline";
+      return "yin-yang";
     case "place":
-      return "location-outline";
+      return "earth-americas";
     case "ai":
-      return "sparkles-outline";
+      return "wand-magic-sparkles";
     default:
-      return "ellipse-outline";
+      return "circle";
   }
 }
 
@@ -278,6 +277,40 @@ function createStyles(c: PeacePlotPalette) {
   });
 }
 
+function getAudioTag(item: DiscoverRemoteItem): string | null {
+  if (item.category !== "music" && item.modality !== "music" && item.mediaType !== "audio") return null;
+  if (item.source === "pixabay" || item.source === "openverse") return "Music";
+
+  const text = `${item.title} ${item.subtitle} ${item.tags?.join(" ")}`.toLowerCase();
+  
+  if (
+    text.includes("speech") ||
+    text.includes("talk") ||
+    text.includes("lecture") ||
+    text.includes("podcast") ||
+    text.includes("interview") ||
+    text.includes("sermon") ||
+    text.includes("oration")
+  ) {
+    return "Speech";
+  }
+
+  if (
+    text.includes("story") ||
+    text.includes("read") ||
+    text.includes("tale") ||
+    text.includes("audiobook") ||
+    text.includes("narrative") ||
+    text.includes("fiction") ||
+    text.includes("poem") ||
+    text.includes("poetry")
+  ) {
+    return "Story";
+  }
+
+  return "Music";
+}
+
 function FeaturedCard({
   item,
   colors,
@@ -308,16 +341,23 @@ function FeaturedCard({
             contentFit="cover"
           />
         ) : (
-          <Ionicons name={icon} size={40} color={colors.primary} />
+          <FontAwesome6 name={icon} size={40} color={colors.primary} />
         )}
       </View>
       <View style={styles.featuredBody}>
         <Text style={styles.featuredTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.featuredMeta} numberOfLines={1}>
-          {item.duration}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <Text style={styles.featuredMeta} numberOfLines={1}>
+            {item.duration}
+          </Text>
+          {getAudioTag(item) ? (
+            <View style={{ backgroundColor: "rgba(255,255,255,0.2)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }}>{getAudioTag(item)}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -352,7 +392,7 @@ function DiscoverRow({
             contentFit="cover"
           />
         ) : (
-          <Ionicons name={icon} size={28} color={colors.primary} />
+          <FontAwesome6 name={icon} size={28} color={colors.primary} />
         )}
       </View>
       <View style={styles.rowBody}>
@@ -364,13 +404,18 @@ function DiscoverRow({
         </Text>
         <View style={styles.rowMeta}>
           <View style={styles.metaPill}>
-            <Ionicons
+            <FontAwesome6
               name={icon}
-              size={14}
+              size={12}
               color={colors.textMuted}
             />
             <Text style={styles.metaText}>{item.duration}</Text>
           </View>
+          {getAudioTag(item) ? (
+            <View style={[styles.metaPill, { backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: colors.border }]}>
+              <Text style={[styles.metaText, { color: colors.textBody, fontWeight: "600" }]}>{getAudioTag(item)}</Text>
+            </View>
+          ) : null}
           {item.doctorBadge ? (
             <View style={styles.doctorBadge}>
               <Text style={styles.doctorBadgeText}>TRUSTED PICK</Text>
@@ -383,9 +428,9 @@ function DiscoverRow({
           ) : null}
         </View>
       </View>
-      <Ionicons
-        name="chevron-forward"
-        size={20}
+      <FontAwesome6
+        name="chevron-right"
+        size={16}
         color={colors.textMuted}
         style={{ alignSelf: "center" }}
       />
@@ -442,8 +487,6 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
       .finally(() => {
         if (!active) return;
         setLoadingFeatured(false);
-        // Best-effort background warm-up so later category opens are faster.
-        void warmDiscoverCache({ category: "all", page: 1 });
       });
     return () => {
       active = false;
@@ -560,9 +603,9 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
       </View>
 
       <View style={styles.searchWrap}>
-        <Ionicons
-          name="search-outline"
-          size={22}
+        <FontAwesome6
+          name="magnifying-glass"
+          size={18}
           color={colors.textMuted}
           style={styles.searchIcon}
         />
@@ -659,7 +702,7 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
 
       <Text style={styles.sectionLabel}>LIBRARY</Text>
       {loadingList ? (
-        <View style={{ alignItems: "center", paddingVertical: 16 }}>
+        <View style={{ alignItems: "center", paddingVertical: 32 }}>
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : null}
@@ -679,13 +722,13 @@ export function DiscoverLibrary({ colors }: DiscoverLibraryProps) {
       onEndReachedThreshold={0.45}
       onEndReached={loadMore}
       ListEmptyComponent={
-        loadingList ? null : (
+        !loadingList ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>
               Nothing matches this filter yet. Try another category or search term.
             </Text>
           </View>
-        )
+        ) : null
       }
       renderItem={({ item }) => (
         <DiscoverRow

@@ -6,8 +6,6 @@ import { requireSupabase } from "@/lib/supabase";
 
 const FUNCTION_NAME = "discover-feed";
 const SUPPRESSED_ITEMS_KEY = "discover-suppressed-item-ids-v1";
-const DISCOVER_FEATURED_CACHE_KEY = "discover-featured-cache-v3";
-const DISCOVER_FEED_CACHE_KEY_PREFIX = "discover-feed-cache-v3";
 
 export type DiscoverRemoteItem = DiscoverItem & {
   source?: string;
@@ -113,36 +111,11 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-function feedCacheKey(category: DiscoverChipId, query: string, page: number, pageSize: number): string {
-  return `${DISCOVER_FEED_CACHE_KEY_PREFIX}:${category}:${query.toLowerCase()}:${page}:${pageSize}`;
-}
-
 export async function fetchDiscoverFeatured(timezone: string): Promise<DiscoverRemoteItem[]> {
-  try {
-    const res = await invoke<{ items?: unknown[] }>({ mode: "featured", timezone });
-    const rows = Array.isArray(res.items) ? res.items : [];
-    const normalized = rows.map(normalizeItem).filter(Boolean) as DiscoverRemoteItem[];
-    const valid = normalized.filter(isRenderableDiscoverItem);
-    await AsyncStorage.setItem(DISCOVER_FEATURED_CACHE_KEY, JSON.stringify(valid));
-    return valid.slice(0, 5);
-  } catch {
-    const cached = await AsyncStorage.getItem(DISCOVER_FEATURED_CACHE_KEY);
-    if (!cached) {
-      throw new Error(
-        "Featured could not load. Please sign in again or redeploy discover-feed with JWT verification disabled for read modes.",
-      );
-    }
-    try {
-      const arr = JSON.parse(cached) as unknown[];
-      return (arr
-        .map(normalizeItem)
-        .filter(Boolean) as DiscoverRemoteItem[])
-        .filter(isRenderableDiscoverItem)
-        .slice(0, 5);
-    } catch {
-      throw new Error("Featured cache is invalid and remote fetch failed.");
-    }
-  }
+  const res = await invoke<{ items?: unknown[] }>({ mode: "featured", timezone });
+  const rows = Array.isArray(res.items) ? res.items : [];
+  const normalized = rows.map(normalizeItem).filter(Boolean) as DiscoverRemoteItem[];
+  return normalized.filter(isRenderableDiscoverItem).slice(0, 5);
 }
 
 export async function fetchDiscoverFeed(params: {
@@ -152,61 +125,25 @@ export async function fetchDiscoverFeed(params: {
   pageSize?: number;
 }): Promise<{ items: DiscoverRemoteItem[]; hasMore: boolean; nextPage: number | null }> {
   const pageSize = Math.max(15, params.pageSize ?? 15);
-  const k = feedCacheKey(params.category, params.query, params.page, pageSize);
-  try {
-    const res = await invoke<{
-      items?: unknown[];
-      hasMore?: boolean;
-      nextPage?: number | null;
-    }>({
-      mode: "feed",
-      category: params.category,
-      query: params.query,
-      page: params.page,
-      pageSize,
-    });
-    const normalized = (Array.isArray(res.items) ? res.items : [])
-      .map(normalizeItem)
-      .filter(Boolean) as DiscoverRemoteItem[];
-    const valid = normalized.filter(isRenderableDiscoverItem);
-    await AsyncStorage.setItem(k, JSON.stringify({
-      items: valid,
-      hasMore: res.hasMore === true,
-      nextPage: typeof res.nextPage === "number" ? res.nextPage : null,
-    }));
-    return {
-      items: valid,
-      hasMore: res.hasMore === true,
-      nextPage: typeof res.nextPage === "number" ? res.nextPage : null,
-    };
-  } catch (e) {
-    const cached = await AsyncStorage.getItem(k);
-    if (!cached) {
-      throw new Error(
-        e instanceof Error
-          ? e.message
-          : "Discover feed failed and no cache is available.",
-      );
-    }
-    try {
-      const parsed = JSON.parse(cached) as {
-        items?: unknown[];
-        hasMore?: boolean;
-        nextPage?: number | null;
-      };
-      const normalized = (Array.isArray(parsed.items) ? parsed.items : [])
-        .map(normalizeItem)
-        .filter(Boolean) as DiscoverRemoteItem[];
-      const valid = normalized.filter(isRenderableDiscoverItem);
-      return {
-        items: valid,
-        hasMore: parsed.hasMore === true,
-        nextPage: typeof parsed.nextPage === "number" ? parsed.nextPage : null,
-      };
-    } catch {
-      throw new Error("Discover feed cache is invalid and remote fetch failed.");
-    }
-  }
+  const res = await invoke<{
+    items?: unknown[];
+    hasMore?: boolean;
+    nextPage?: number | null;
+  }>({
+    mode: "feed",
+    category: params.category,
+    query: params.query,
+    page: params.page,
+    pageSize,
+  });
+  const normalized = (Array.isArray(res.items) ? res.items : [])
+    .map(normalizeItem)
+    .filter(Boolean) as DiscoverRemoteItem[];
+  return {
+    items: normalized.filter(isRenderableDiscoverItem),
+    hasMore: res.hasMore === true,
+    nextPage: typeof res.nextPage === "number" ? res.nextPage : null,
+  };
 }
 
 export async function fetchDiscoverItemById(id: string): Promise<DiscoverRemoteItem | null> {
@@ -260,19 +197,3 @@ export async function clearSuppressedDiscoverItemIds(): Promise<void> {
   await AsyncStorage.removeItem(SUPPRESSED_ITEMS_KEY);
 }
 
-export async function warmDiscoverCache(params?: {
-  category?: DiscoverChipId;
-  query?: string;
-  page?: number;
-}): Promise<void> {
-  try {
-    await invoke<{ ok: boolean }>({
-      mode: "warm-cache",
-      category: params?.category ?? "all",
-      query: params?.query ?? "",
-      page: params?.page ?? 1,
-    });
-  } catch {
-    // best-effort optimization only
-  }
-}
