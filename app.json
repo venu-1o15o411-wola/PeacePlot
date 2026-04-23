@@ -8,7 +8,6 @@
     "scheme": "peaceplot",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.anonymous.PeacePlot",
       "infoPlist": {
         "NSCameraUsageDescription": "PeacePlot uses the camera for face check-ins and finger pulse check-ins; the back camera and flash may be used where needed. Photos and video frames are processed on your device for stress estimation."
@@ -73,6 +72,13 @@
         }
       ],
       "expo-sqlite",
+      [
+        "expo-speech-transcriber",
+        {
+          "speechRecognitionPermission": "PeacePlot uses on-device speech recognition only to turn your short voice check-in into text for stress estimation—not for background listening.",
+          "microphonePermission": "PeacePlot uses the microphone only to record short voice samples for stress check-ins—not for music or background listening."
+        }
+      ],
       "onnxruntime-react-native",
       "expo-asset"
     ],
