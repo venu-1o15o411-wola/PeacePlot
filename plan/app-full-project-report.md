@@ -1,39 +1,48 @@
-# PeacePlot Full Project Report
+# PeacePlot Full Requirements & Implementation Specification
 
-## Scope of this report
+## Document purpose
 
-This report summarizes the current state of the PeacePlot app after a full repository-level analysis:
+This document defines the **full project requirements** for PeacePlot and records the **current implementation status** across architecture, product structure, features, UX style, backend, and data model.
 
-- architecture and major modules
-- implemented user flows
-- backend/data model status
-- Discover and music pipeline status
-- risks, gaps, and production readiness
-- prioritized action plan
+It is intended to be the broad project-level reference for:
 
----
-
-## 1) Product summary
-
-PeacePlot is an AI-assisted wellness app with a React Native/Expo client and Supabase backend.  
-Its intended core value is personalized stress support through:
-
-- check-in and estimation flows
-- adaptive recommendations (Discover)
-- in-app content playback
-- longitudinal user memory and feedback loops
-
-Current state is strong in core scaffolding and backend orchestration, but still mixed between production-ready modules and staged/placeholder surfaces.
+- what the app is designed to do
+- how the system is structured
+- what has already been implemented
+- what remains to complete
 
 ---
 
-## 2) System architecture
+## 1) Product vision and target experience
 
-### Frontend
+PeacePlot is a wellness-focused AI application that supports users through stress-awareness and personalized relief experiences.  
+The product is designed to feel like a daily companion rather than a one-time tool.
 
-- Expo Router app with drawer + tabs navigation.
-- Theme/appearance provider + auth/session provider at app shell level.
-- Main tabs: Home, Discover, Measure, Virtual Doctor, Profile.
+### Core value objectives
+
+1. Help users estimate stress through multiple modalities (question/audio/visual/finger).
+2. Convert estimation insights into personalized next steps (content, advice, routines).
+3. Provide a rich Discover system that surfaces calming and useful media in-app.
+4. Keep user interactions secure, private, and smooth across mobile experiences.
+5. Build toward an AI-supported virtual care flow (human-feeling conversations and guidance).
+
+---
+
+## 2) System architecture requirements
+
+### 2.1 Frontend architecture
+
+Required:
+
+- Expo/React Native app using route groups with drawer + tabs.
+- App-wide providers for theme/appearance and auth session.
+- In-app media rendering for discover items (video/audio/image/book).
+
+Current implementation:
+
+- Implemented with `expo-router` layouts and provider composition.
+- Tab/drawer shell is active.
+- Media detail screen and modal viewer exist.
 
 Key files:
 
@@ -41,21 +50,39 @@ Key files:
 - `src/app/(drawer)/_layout.tsx`
 - `src/app/(drawer)/(tabs)/_layout.tsx`
 - `src/providers/auth-session.tsx`
+- `src/app/(drawer)/(tabs)/discover/item/[id].tsx`
 
-### Backend
+### 2.2 Backend architecture
 
-- Supabase Edge Functions (Deno) for:
-  - AI check-in flow (`checkin-chat`)
-  - Discover feed orchestration (`discover-feed`)
+Required:
+
+- Supabase Edge Functions as controlled backend gateway for AI and provider APIs.
+- No direct external provider key use from frontend.
+- Personalized ranking and retrieval handled server-side.
+
+Current implementation:
+
+- `checkin-chat` and `discover-feed` edge functions implemented.
+- Provider requests and normalization logic are backend-side.
 
 Key files:
 
 - `supabase/functions/checkin-chat/index.ts`
 - `supabase/functions/discover-feed/index.ts`
 
-### Database
+### 2.3 Data architecture
 
-- Postgres migrations define auth/profile, check-in, analysis, user memory, discover feedback, and cache tables.
+Required:
+
+- Profile/auth linkage.
+- Check-in session, messages, analysis, memory, and feedback persistence.
+- Discover featured/feed and user-feedback persistence.
+- Optional cache layers for raw provider payloads and query outputs.
+
+Current implementation:
+
+- Core tables and policies created via migrations.
+- Discover cache tables exist in schema.
 
 Key files:
 
@@ -66,15 +93,49 @@ Key files:
 
 ---
 
-## 3) Core feature status
+## 3) Product structure and navigation requirements
 
-### 3.1 Authentication and session
+### Required app sections
 
-Status: **implemented and functional**
+- Home
+- Discover
+- Measure
+- Virtual Doctor
+- Profile
+- Drawer-level secondary pages (journal, notifications, etc.)
 
-- Email/password sign in/up integrated with Supabase.
-- Session bootstrap and listener logic exists in provider.
-- Auth guard behavior is present.
+Current implementation:
+
+- Core tab and drawer pages exist.
+- Some sections are full-featured; others remain scaffold/placeholder-heavy.
+
+Key files:
+
+- `src/app/(drawer)/(tabs)/index.tsx`
+- `src/app/(drawer)/(tabs)/discover/index.tsx`
+- `src/app/(drawer)/(tabs)/measure.tsx`
+- `src/app/(drawer)/(tabs)/virtual-doctor.tsx`
+- `src/app/(drawer)/(tabs)/profile.tsx`
+- `src/app/(drawer)/journal.tsx`
+- `src/app/(drawer)/notifications.tsx`
+
+---
+
+## 4) Full feature requirements and current implementation status
+
+## 4.1 Authentication and account
+
+Requirements:
+
+- email/password sign up and sign in
+- persistent session
+- guarded navigation for unauthenticated users
+- password reset flow
+
+Current status:
+
+- Implemented and functional through Supabase.
+- Session provider controls auth lifecycle.
 
 Key files:
 
@@ -83,174 +144,220 @@ Key files:
 - `src/app/signin.tsx`
 - `src/app/signup.tsx`
 
-Notes:
+## 4.2 Estimation flows
 
-- OAuth providers appear as UI placeholders, not fully wired.
+Requirements:
 
-### 3.2 Estimation and check-in
+- question-based estimation
+- audio-based estimation
+- visual/camera estimation
+- finger/camera estimation
+- result view and transition into recommendations
 
-Status: **partially production, partially staged**
+Current status:
 
-- Question-based check-in is end-to-end with backend persistence.
-- Visual/fingerprint flows have substantial native implementation.
-- Audio estimation currently still includes mock-style logic path.
+- Question estimation is integrated end-to-end with backend.
+- Visual and finger flows have substantial native logic.
+- Audio path includes mock-scoring behavior in current state.
+- Result screen flow exists.
 
 Key files:
 
 - `src/components/estimate/questions-measure-flow.tsx`
-- `src/lib/checkin-chat.ts`
+- `src/components/estimate/audio-measure-flow.tsx`
 - `src/components/estimate/visual-measure-flow.tsx`
 - `src/components/estimate/finger-measure-flow.native.tsx`
-- `src/components/estimate/audio-measure-flow.tsx`
 - `src/lib/mock-voice-estimation.ts`
+- `src/app/estimate/result.tsx`
 
-### 3.3 Discover
+## 4.3 Discover system
 
-Status: **feature-rich but operationally unstable in provider-dependent music path**
+Requirements:
 
-Implemented:
+- featured slider with mixed content
+- category chips with server retrieval
+- at least 15 items on first category page
+- infinite scroll for additional pages
+- search/filter behavior
+- no duplicates across pages
+- personalized ordering where signals exist
+- item detail playback in-app
 
-- chips, search, featured rail, library list
-- item detail screen and media rendering
-- infinite scroll behavior and feedback actions
+Current status:
+
+- Full UI/UX framework implemented (chips, featured, list, detail, actions).
+- Edge-function feed orchestration and personalization scoring implemented.
+- Pagination logic and dedupe logic implemented.
+- Active music-provider iteration ongoing.
+
+Key files:
+
+- `src/components/discover/discover-library.tsx`
+- `src/lib/discover-feed.ts`
+- `src/app/(drawer)/(tabs)/discover/item/[id].tsx`
+- `supabase/functions/discover-feed/index.ts`
+- `plan/discover-plan.md`
+
+## 4.4 AI conversational support
+
+Requirements:
+
+- conversational check-in
+- high-quality but efficient AI responses
+- storing useful session outcomes into user memory signals
+
+Current status:
+
+- AI chat edge function implemented with analysis persistence path.
+- Personalization signal integration exists for Discover weighting.
+
+Key files:
+
+- `supabase/functions/checkin-chat/index.ts`
+- `supabase/migrations/20260417120000_checkin_question_estimation.sql`
+
+## 4.5 Feedback loop and personalization
+
+Requirements:
+
+- capture user reaction signals (`save`, `hide`, `not_for_me`, `complete`, etc.)
+- use feedback to adjust recommendations over time
+
+Current status:
+
+- Discover feedback write path implemented.
+- Hidden/suppressed local behavior and UI controls present.
+
+Key files:
+
+- `src/lib/discover-feed.ts`
+- `src/components/discover/discover-library.tsx`
+- `supabase/functions/discover-feed/index.ts`
+
+---
+
+## 5) UX, visual style, and interaction requirements
+
+### 5.1 UX principles
+
+- calm, low-cognitive-load presentation
+- clear category controls and quick content scanning
+- in-app media experience (avoid external app jumps)
+- meaningful loading/empty/error states
+- resilient behavior during provider/API instability
+
+### 5.2 Current style implementation
+
+- consistent card/list/chip patterns implemented in Discover
+- custom audio player UI exists for music modal playback
+- source/type tags and control elements are present
+- app shell visual identity and tab structure are established
 
 Key files:
 
 - `src/components/discover/discover-library.tsx`
 - `src/app/(drawer)/(tabs)/discover/item/[id].tsx`
-- `src/lib/discover-feed.ts`
-- `supabase/functions/discover-feed/index.ts`
-
-Observed issue trend:
-
-- Music provider results can drop to zero in runtime despite fallback logic changes, causing empty/seed-only outcomes.
+- `src/theme/peaceplot-theme.ts`
 
 ---
 
-## 4) Data model overview
+## 6) Integrations and provider requirements
 
-### Identity/Profile
+### Required integration model
 
-- `profiles` table with user identity linkage.
-- availability checks and trigger-driven profile creation.
+- backend-mediated provider access only
+- strict filtering/normalization before user-facing response
+- deterministic fallback path when provider returns empty
 
-### Check-in and memory
+### Current integration set
 
-- `checkin_sessions`, `checkin_messages`, `checkin_analysis`
-- `user_memory`, `memory_observations`
-- `recommendation_feedback`
+- Supabase (Auth/DB/Functions)
+- Gemini (check-in)
+- content providers in Discover pipeline (images/videos/books/music sources)
+
+Relevant documents and files:
+
+- `supabase/functions/discover-feed/index.ts`
+- `plan/discover-plan.md`
+- `plan/fma-usage-master.md`
+- `plan/pixabay-music-usage-master.md`
+
+---
+
+## 7) Data model requirements (functional)
+
+### Identity + profile
+
+- one profile per auth user
+- unique user id fields
+- own-row access policies
+
+### Estimation + memory
+
+- check-in sessions/messages
+- analysis snapshots
+- memory observations
+- feedback tracking
 
 ### Discover
 
-- `discover_daily_featured`
-- `discover_user_feedback`
-- cache-layer tables exist:
-  - `discover_raw_cache`
-  - `discover_catalog_cache`
-  - `discover_query_cache`
+- daily featured persistence
+- user feedback persistence
+- optional provider/query cache layers
 
-Important current mismatch:
+Current status:
 
-- cache schema exists, but discover function behavior is mostly live-fetch oriented and does not fully exploit cache-layer architecture.
+- all above domains have migration-level schema foundations.
 
 ---
 
-## 5) Integrations and provider status
+## 8) Operational and engineering requirements
 
-### In active use
+### Required engineering standards
 
-- Supabase Auth/DB/Functions
-- Gemini usage in check-in function
-- external content providers in Discover path
+- environment-based secret handling
+- no provider key exposure in client
+- structured error handling and fallback behavior
+- deploy-safe edge function updates
+- iterative observability improvements for provider failures
 
-### Provider stability findings
+### Current status
 
-- Music source strategy has changed multiple times (FMA/Openverse/Pixabay/Jamendo paths).
-- Current runtime responses show provider music can still return zero in deployed environment.
-- This indicates unresolved provider contract/data-shape/filter interaction in live edge execution.
-
-Operational implication:
-
-- direct runtime provider dependency for music remains high-risk for user-facing reliability.
+- secret handling architecture is in place.
+- major functions are modularized and maintainable.
+- automated test and CI depth still limited and should be expanded.
 
 ---
 
-## 6) Quality and delivery maturity
+## 9) What is implemented now (consolidated)
 
-### Strengths
+Implemented now across the project:
 
-- Good modular file structure.
-- Clear separation of frontend and backend responsibilities.
-- Robust migration history and evolving schema.
-- Strong velocity on iterative feature development.
-
-### Gaps
-
-- No comprehensive automated test suite detected.
-- No strong CI signal on function contract stability.
-- README/runbook/documentation still underdeveloped for team operations.
-- Discover music path lacks deterministic reliability under live provider variability.
+1. Auth/session base is active and functional.
+2. Main navigation architecture is active (drawer + tabs).
+3. Check-in + analysis backend is implemented.
+4. Measure screens exist for question/audio/visual/finger (mixed real + staged depth).
+5. Discover UI and API integration are comprehensive and actively iterated.
+6. Discover feedback capture and suppression UX exist.
+7. Media item detail rendering and in-app playback flows are implemented.
+8. Database migrations establish core product domains.
+9. Planning artifacts are extensive and include provider strategy research.
 
 ---
 
-## 7) Current critical risk list
+## 10) What remains to complete full target state
 
-1. **Discover music reliability risk**
-   - provider fetch returns zero in live runtime.
-2. **Provider dependency risk**
-   - runtime user experience coupled to external APIs.
-3. **Cache architecture underutilized**
-   - lower resilience than intended plan.
-4. **Mock/partial flows mixed with production UX**
-   - possible expectation mismatch for users.
-5. **Testing/observability gap**
-   - difficult root-cause resolution without stable diagnostics.
+1. Finalize and stabilize production music-provider path with deterministic quality and availability.
+2. Fully operationalize Discover cache strategy and background refresh design (if re-enabled by product direction).
+3. Replace remaining mock estimation sections with true inference/evaluation services.
+4. Expand feature depth for currently light modules (Virtual Doctor/Profile/Journal/Notifications).
+5. Add stronger automated tests and operational runbook coverage.
 
 ---
 
-## 8) Recommended priority roadmap
+## 11) Final project-level statement
 
-### Priority 1 (Immediate)
-
-- Stabilize music retrieval by moving to ingestion-and-serve model:
-  - ingest provider tracks offline
-  - filter/normalize/store in DB
-  - serve Discover music from curated DB rows
-- Add explicit provider debug telemetry in API response/logs:
-  - HTTP status per provider
-  - result counts before/after each filter stage
-
-### Priority 2 (Short-term)
-
-- Activate real cache-layer strategy for Discover (`raw/catalog/query`).
-- Add contract tests for `discover-feed` and `checkin-chat`.
-- Add smoke tests for paging (`15 first, +15 on next page`) per category.
-
-### Priority 3 (Mid-term)
-
-- Replace remaining mock estimation parts with real backend inference pipeline.
-- Complete placeholder modules (Virtual Doctor/Profile/Journal/Notifications) into data-backed flows.
-- Improve operational docs and deployment runbook.
-
----
-
-## 9) Production readiness rating (current)
-
-- Architecture: **Good**
-- Core auth/session: **Good**
-- Check-in core: **Moderate to Good**
-- Discover general flow: **Moderate**
-- Discover music reliability: **Needs stabilization**
-- Testing/observability: **Needs improvement**
-
-Overall: **Promising and substantial codebase, not yet fully production-hardened end-to-end.**
-
----
-
-## 10) Final assessment
-
-PeacePlot already has a meaningful foundation with real backend logic, personalization structure, and a strong product direction.  
-The key blocker to “smooth production behavior” is not architecture quality, but reliability hardening in provider-dependent paths (especially Discover music) plus test/observability maturity.
-
-If the team executes the priority roadmap above, PeacePlot can transition from iterative build mode to stable production mode quickly.
+PeacePlot is a broad and ambitious wellness platform with a strong implemented foundation in architecture, auth/session, check-in intelligence, and Discover system design.  
+The project now has both extensive code implementation and planning depth.  
+To reach complete production maturity, remaining work is focused on reliability hardening, provider stabilization, and completion depth for all product surfaces.
 
