@@ -219,7 +219,10 @@ Order (left → right): **Home** · **Discover** · **Virtual doctor** (center *
 
 - Inputs: **questions**, **speech-to-text (audio-for-measurement)**, **camera (face)**, **fingerprint**; **smart watch** phased (§7).
 - **Mandatory intermediate screen:** **Dataset type selection** **after** estimation, **before** recommendation results.
-- **Audio measurement (implemented path):** **`AudioMeasureFlow`** (`src/components/estimate/audio-measure-flow.tsx`) — **`expo-audio`** recording (permission string via **`expo-audio`** config plugin in **`app.json`**), clear copy that voice is **for measurement only** (see **`research.md`** §4 / §5.5). Flow: record → optional playback preview → **mock** transcript + stress band (`src/lib/mock-voice-estimation.ts`) → **`/estimate/dataset-types`** (gating per §3.1 / §5.2) → **`/estimate/result`** summary. **Speech-to-text and model scoring** remain **Supabase Edge Functions** (§6.1)—replace mocks when wired.
+- **Audio measurement (implemented path):** **`AudioMeasureFlow`** (`src/components/estimate/audio-measure-flow.tsx`) — **`expo-audio`** records a clip on press/hold and returns a file URI on release; **`expo-speech-transcriber`** (plugin with speech + mic purpose strings in **`app.json`**) transcribes **after recording** from that URI. The library **does not run in Expo Go** — use a **development build** (`expo run:ios` / `expo run:android`). **English (`en_US`)** only per upstream limits. Split into **two clear steps** on one route:
+  - **Step 1 — Capture:** **Press and hold** the **“Professional audio”** control; recording starts on press-in and stops on release (or max duration). While recording: **circular time progress** (0→max) via **`react-native-svg`**, **live waveform** bars, and **pulsing rings** (Reanimated). If the user releases before capture starts (e.g. permission still in flight), the take is **aborted** safely.
+  - **Step 2 — Review:** After release, a **review** card shows duration and **playback** (when a file URI exists). **“Next step”** transcribes from the recorded URI (`transcribeAudioWithSFRecognizer`, then **`SpeechAnalyzer`** if available and primary text is empty on iOS), merges with **`mock-voice-estimation`** stress band (`src/lib/mock-voice-estimation.ts`), optionally calls **Gemini** (`EXPO_PUBLIC_GEMINI_API_KEY`, **`src/lib/gemini-voice.ts`**) for a short **wellness reflection**, stores full text in **`src/lib/voice-estimate-session.ts`** for **`/estimate/result`**, then navigates to **`/estimate/dataset-types`** (gating per §3.1 / §5.2).
+  - **After gating:** **`/estimate/result`** shows **transcript** + **Gemini reflection** when configured; stress score remains **placeholder** until **Supabase Edge Functions** (§6.1) replace heuristics.
 
 **Recommendations & AI advice:**
 
@@ -411,4 +414,4 @@ Updates to scope or phases should be recorded **in this file** (dated notes or v
 
 ---
 
-_Last updated: 2026-04-20_
+_Last updated: 2026-04-18_

@@ -1,9 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { consumeVoiceEstimateSession } from "@/lib/voice-estimate-session";
 import { usePeacePlotColors } from "@/providers/peaceplot-appearance";
 import type { PeacePlotPalette } from "@/theme/peaceplot-theme";
 
@@ -68,6 +69,17 @@ export default function EstimateResultScreen() {
   const router = useRouter();
   const colors = usePeacePlotColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [voiceExtras, setVoiceExtras] = useState<{
+    transcript: string;
+    guidance: string;
+  } | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      setVoiceExtras(consumeVoiceEstimateSession());
+    }, []),
+  );
+
   const p = useLocalSearchParams<{
     mode?: string;
     stressBand?: string;
@@ -80,6 +92,9 @@ export default function EstimateResultScreen() {
   const datasets = (p.datasets ?? "").split(",").filter(Boolean);
   const band = p.stressBand ?? "moderate";
   const score = p.stressScore ? Number(p.stressScore) : null;
+  const transcriptDisplay =
+    voiceExtras?.transcript?.trim() || (p.transcript ?? "").trim() || "";
+  const guidanceDisplay = (voiceExtras?.guidance ?? "").trim();
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
@@ -99,7 +114,9 @@ export default function EstimateResultScreen() {
             <Text style={styles.score} accessibilityRole="text">
               {score}
             </Text>
-            <Text style={styles.muted}>0–100 index (higher = more acute load)</Text>
+            <Text style={styles.muted}>
+              0–100 index (higher = more acute load)
+            </Text>
           </View>
         ) : null}
         <Text style={styles.band}>
@@ -108,24 +125,36 @@ export default function EstimateResultScreen() {
         <Text style={styles.lead}>
           {p.mode === "camera" || p.mode === "fingerprint" ? (
             <>
-              Score is on a <Text style={{ fontWeight: "700" }}>0–100</Text> index (higher suggests
-              more acute load). It is a wellness-oriented estimate from on-device signals — not a
-              clinical diagnosis. Mode: {p.mode}.
+              Score is on a <Text style={{ fontWeight: "700" }}>0–100</Text>{" "}
+              index (higher suggests more acute load). It is a wellness-oriented
+              estimate from on-device signals — not a clinical diagnosis. Mode:{" "}
+              {p.mode}.
               {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
             </>
           ) : (
             <>
-              This score is a <Text style={{ fontWeight: "700" }}>placeholder</Text> until
-              speech-to-text and models run per your deployment plan. Mode: {p.mode ?? "—"}.
+              This score is a{" "}
+              <Text style={{ fontWeight: "700" }}>placeholder</Text> until
+              speech-to-text and models run per your deployment plan. Mode:{" "}
+              {p.mode ?? "—"}.
               {p.durationSec ? ` Sample length: ${p.durationSec}s.` : ""}
             </>
           )}
         </Text>
 
-        {p.transcript ? (
+        {transcriptDisplay ? (
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Transcript preview (mock)</Text>
-            <Text style={styles.transcript}>{p.transcript}</Text>
+            <Text style={styles.cardTitle}>
+              {p.mode === "audio" ? "Voice transcript" : "Transcript preview"}
+            </Text>
+            <Text style={styles.transcript}>{transcriptDisplay}</Text>
+          </View>
+        ) : null}
+
+        {guidanceDisplay ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Reflection (Gemini)</Text>
+            <Text style={styles.transcript}>{guidanceDisplay}</Text>
           </View>
         ) : null}
 
